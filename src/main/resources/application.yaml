@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: provamiavuota
+  datasource:
+    url: jdbc:mysql://localhost:3306/e_commerce_milan
+    username: root
+    password: user
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto:
+
+variabili:
+  minimoPuntiUsabili: 100
