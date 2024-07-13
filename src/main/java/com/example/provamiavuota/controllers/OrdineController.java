@@ -13,10 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/ordini")
@@ -62,9 +59,10 @@ public class OrdineController {
             return new ResponseEntity<>(new ResponseMessage("MINIMA QUANTITA DI PUNTI FEDELTA DA USARE NON SODDISFATTA"), HttpStatus.BAD_REQUEST);
         } catch (QuantitaProdottoNonDisponibile e) {
             return new ResponseEntity<>(new ResponseMessage("QUANTITA PRODOTTO NON DISPONIBILE"), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
         }
+//        } catch (Exception e) {
+//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
+//        }
     }
 
     @GetMapping("/elencoOrdini/{utente}/{DataInizio}/{DataFine}")
@@ -81,6 +79,14 @@ public class OrdineController {
             if(numPagina<0 || dimPagina<=0 || !ordinamentoValido.contains(ordinamento)) {
                 return new ResponseEntity<>(new ResponseMessage("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI"), HttpStatus.BAD_REQUEST);
             }
+            //METTO DATAFINE A 23:59 COSI È COMPRESO SENNO LE QUERY LO ESCLUDONO
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(DataFine);
+            cal.set(Calendar.HOUR_OF_DAY, 23);
+            cal.set(Calendar.MINUTE, 59);
+            cal.set(Calendar.SECOND, 59);
+            cal.set(Calendar.MILLISECOND, 999);
+            DataFine = cal.getTime();
             List<Ordine> listaOrdini = ordineService.getOrdiniInPeriodo(u, DataInizio, DataFine, numPagina, dimPagina, ordinamento);
             if (listaOrdini.isEmpty()) {
                 return new ResponseEntity<>(new ResponseMessage("NESSUN ACQUISTO EFFETTUATO DURANTE QUESTO PERIODO O PRESENTE IN QUESTA PAGINA"), HttpStatus.OK);
@@ -141,12 +147,6 @@ public class OrdineController {
         }
 
     }
-
-
-//    @GetMapping("/prova/{idUtente}")
-//    public List<Ordine> prova(@PathVariable int idUtente) throws UtenteNonEsistenteONonValido {
-//     return ordineService.prova(idUtente);
-//    }
 
     @GetMapping("dettagliOrdine/{idOrdine}")
     public ResponseEntity getDettaglioOrdine(@PathVariable int idOrdine,

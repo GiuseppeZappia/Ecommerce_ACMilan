@@ -15,3 +15,4 @@ spring:
 
 variabili:
   minimoPuntiUsabili: 100
+  listaStringhe: Tazze,PortaChiavi,Palloni,Cinture,Bracciali,Sciarpe,Berretti,Cappelli,Profumi uomo,Profumi donna,Spille

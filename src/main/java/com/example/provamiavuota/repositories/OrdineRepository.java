@@ -13,8 +13,8 @@ public interface OrdineRepository extends JpaRepository<Ordine,Integer> {
 
     @Query( "SELECT o "+
             "FROM Ordine o "+
-            "WHERE o.data  > ?2 AND " +
-            " o.data < ?3 AND o.utente = ?1 ")
+            "WHERE o.data  >= ?2 AND " +
+            " o.data <= ?3 AND o.utente = ?1 ")
     Page<Ordine> ricercaOrdiniInPeriodo(Utente u, Date dataInizio, Date dataFine, Pageable paging);
 
     Page<Ordine> findByUtente(Utente utente, Pageable paging);

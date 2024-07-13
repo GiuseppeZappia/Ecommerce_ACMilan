@@ -3,10 +3,7 @@ package com.example.provamiavuota.controllers;
 import com.example.provamiavuota.entities.Prodotto;
 import com.example.provamiavuota.services.ProdottoService;
 import com.example.provamiavuota.supports.ResponseMessage;
-import com.example.provamiavuota.supports.exceptions.FasciaDiPrezzoNonValidaException;
-import com.example.provamiavuota.supports.exceptions.ProdottoGiaEliminatoException;
-import com.example.provamiavuota.supports.exceptions.ProdottoGiaEsistenteException;
-import com.example.provamiavuota.supports.exceptions.ProdottoNonPresenteNelDbExceptions;
+import com.example.provamiavuota.supports.exceptions.*;
 
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +14,6 @@ import javax.validation.Valid;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/prodotti")
@@ -74,10 +70,14 @@ public class ProdottoController {
     @GetMapping("/perNome/{nomeProdotto}")
     //AGGIUNGO UNIQUE ANCHE SUL SINGOLO NOME E NON ANCHE CON CATEGORIA? PERCHE ALLA FINE NON AVRO DUE MAGLIE CON IDENTICO NOME
     public ResponseEntity getProdottoByNomeProdotto(@PathVariable String nomeProdotto) {
-        Prodotto prodotto = prodottoService.trovaProdottoByNome(nomeProdotto);
-        if (prodotto == null)
+        try {
+            Prodotto prodotto = prodottoService.trovaProdottoByNome(nomeProdotto);
+            if (prodotto == null)//CAMBIA QUI E METTI ECCEZONE MAGARI
+                throw new ProdottoNonValidoException();
+            return new ResponseEntity<>(prodotto, HttpStatus.OK);
+        }catch (ProdottoNonValidoException p){
             return new ResponseEntity<>(new ResponseMessage("NESSUN PRODOTTO CON QUESTO NOME"), HttpStatus.OK);
-        return new ResponseEntity<>(prodotto, HttpStatus.OK);
+        }
     }
 
     @GetMapping("/ricercaAvanzata")
@@ -108,15 +108,18 @@ public class ProdottoController {
     @PostMapping
     public ResponseEntity salvaProdotto(@RequestBody @Valid Prodotto prodotto) {
         try{
-            prodottoService.salvaProdotto(prodotto);
+            prodottoService.salvaProdotto(prodotto);//RESTITUISCO PRODOTTO?????
             return new ResponseEntity<>(new ResponseMessage("PRODOTTO SALVATO CON SUCCESSO"),HttpStatus.OK);
         }catch (ProdottoGiaEsistenteException e){
             return new ResponseEntity<>(new ResponseMessage("PRODOTTO GIA' ESISTENTE"), HttpStatus.BAD_REQUEST);
-        }
-        catch(FasciaDiPrezzoNonValidaException e){
+        }catch (ProdottoNonValidoException e){
+            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO "), HttpStatus.BAD_REQUEST);
+        }catch(FasciaDiPrezzoNonValidaException e){
             return new ResponseEntity<>(new ResponseMessage("FASCIA DI PREZZO NON VALIDA"), HttpStatus.BAD_REQUEST);
-        }catch(Exception e){
-            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
+        }catch (CategoriaNonValidaException e){
+            return new ResponseEntity<>(new ResponseMessage("CATEGORIA NON VALIDA"), HttpStatus.BAD_REQUEST);
+//        }catch(Exception e){
+//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
         }
     }
 

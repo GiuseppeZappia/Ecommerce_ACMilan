@@ -13,8 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.PrinterIOException;
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
@@ -45,43 +43,55 @@ public class OrdineService {
         }
     }
 
-    @Transactional(readOnly = false)
+
+    //QUINDI LA SAVE LA FACCIO SOLO DELLE ENTITY CHE NON PRENDO DAL DB MA CHE CREO IO O RICEVO DA FE, NEGLI ALTRI CASI INVECE
+    //NON FACCIO LA SAVE PERCHE SONO GESTITE IN AUTOMATICO
+    //CON IL ROLLBACKFOR GESTISCO LE ECCEZIONI CHE QUESTO METODO LANCIA GARANTENDO CHE VENGANO EFFETTUATE LE ROLLBACK LASCIANDO IL DB CONSISTENTE
+    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class})
     public Ordine salvaOrdine(@NotNull Ordine ordine) throws QuantitaProdottoNonDisponibile, OrdineNonValido, PuntiFedeltaNonDisponibili, UtenteNonEsistenteONonValido, MinimoPuntiRichiestoNonSoddisfatto {
-        boolean applicataPromozione = false;//serve per aggiunta punti ad utente che dipende se c'erano prod in promo nell'ordine o meno
+        boolean applicataPromozione = false;
+        //serve per aggiunta punti ad utente che dipende se c'erano prod in promo nell'ordine o meno
         Ordine ordineSalvato=ordineRepository.save(ordine);
-        //QUI CONTROLLO che la lista ordine non sia vuota, dovrei controllare che il totale dell'ordine sia pari alla somma dei totali del dettaglio ordine?
+        //QUI CONTROLLO che l'ordine contenga qualche prodotto
         if(ordineSalvato.getListaDettagliOrdine().isEmpty()){
             throw new OrdineNonValido();
         }
-        //QUI CONTROLLO CHE PRODOTTI CI SIANO
+
         double totalePrevistoSenzaSconti=0;
-        //SE SONO ARRIVATO QUI I PRODOTTI CI SONO E PROCEDO CON ACQUISTO
+
         for (DettaglioOrdine d : ordineSalvato.getListaDettagliOrdine()) {
             Prodotto prodottoDaAcquistare = prodottoRepository.findById(d.getProdotto().getId()).orElse(null);
-            if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()<=0){//controllo per verificare se i dettagli ordine sono ok, vanno fatti? se si, cosi? li lascio qui?
+            if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()<=0){
+                //controllo per verificare se i dettagli ordine sono ok, vanno fatti? se si, qui?
                 throw new OrdineNonValido();
             }
             if (prodottoDaAcquistare.getQuantita() < d.getQuantita())
                 throw new QuantitaProdottoNonDisponibile();
+
             //se sono qui sicuramente non sarà null il prodotto
             int nuovaQuantita = prodottoDaAcquistare.getQuantita() - d.getQuantita();
             prodottoDaAcquistare.setQuantita(nuovaQuantita);
-            prodottoRepository.save(prodottoDaAcquistare);
             d.setProdotto(prodottoDaAcquistare);
             d.setOrdine(ordineSalvato);
             totalePrevistoSenzaSconti+=d.getQuantita()*d.getPrezzoUnitario();
-            boolean prodottoInPromozione=prodPromoRepository.existsByProdottoAndAttiva(prodottoDaAcquistare);//verifico se quel prodotto è parte di qualche promo
+
+            boolean prodottoInPromozione=prodPromoRepository.existsByProdottoAndAttiva(prodottoDaAcquistare);
+            //verifico se quel prodotto è parte di qualche promo
+
             if (prodottoInPromozione){//se esiste almeno una promozione...
                 applicataPromozione=true;//in modo tale da non dare i punti alla tessera dell'utente
                 ProdottiPromo prodPromoConScontoMax=prodPromoRepository.findPromozioneWithMaxScontoByProdotto(prodottoDaAcquistare);
                 int percentualeScontoMax=prodPromoConScontoMax.getSconto();
                 double sconto= (((double) percentualeScontoMax/100) * prodottoDaAcquistare.getPrezzo());
+
                 //aggiorno il prezzo sia per l'ordine che per il dettaglio ordine
                 d.setPrezzoUnitario(prodottoDaAcquistare.getPrezzo()-sconto);
                 ordineSalvato.setTotale(ordineSalvato.getTotale()-sconto*d.getQuantita()); //detraggo sconto moltiplicato per quantita acquistata
             }
             DettaglioOrdine salvatoDef=dettaglioOrdineRepository.save(d);
         }
+
+        //PREZZO NON È QUELLO CHE DOVREBBE ESSERE
         if(ordineSalvato.getTotale()!=totalePrevistoSenzaSconti){
             throw new OrdineNonValido();
         }
@@ -113,18 +123,11 @@ public class OrdineService {
             ordineSalvato.setTotale(nuovoTotale);//sottraggo sconto a totale
             u.setPuntifedelta(u.getPuntifedelta() - ordineSalvato.getPuntiusati());//sottraggo punti usati
         }
-        Utente utentePuntiAggiornati = utenteRepository.save(u); //aggiorno utente con nuovi punti
         //qua se rimetti save vedi che non è u ma utentepuntiaggiornati
-        ordineSalvato.setUtente(utentePuntiAggiornati);//cosi restituisco ordine con utente con punti aggiornati
-        Ordine risultato = ordineRepository.save(ordineSalvato);//salvo dopo aver aggiornato correttamente punti usati e totale nuovo
-//        List<Ordine> listaOrdiniUtente = utentePuntiAggiornati.getOrdini();
-//        listaOrdiniUtente.add(risultato);
-//        utentePuntiAggiornati.setOrdini(listaOrdiniUtente);
-        //qua pure forse potrei evitare di fare la save ma restituire dopo la set
-       return risultato;//IN QUESTO DOVREI RESTITUIRE UTENTE CON PUNTI NUOVI? per ora lo faccio
+        ordineSalvato.setUtente(u);//cosi restituisco ordine con utente con punti aggiornati
+        System.out.println(ordineSalvato);
+        return ordineSalvato;
     }
-
-
 
     private boolean utentePresenteNelDb(Utente utente) {
         return utenteRepository.existsByNomeIgnoreCaseAndCognomeIgnoreCaseAndEmailIgnoreCaseAndUsernameIgnoreCaseAndPasswordAndPuntifedelta(utente.getNome(), utente.getCognome(), utente.getEmail(), utente.getUsername(), utente.getPassword(), utente.getPuntifedelta());
@@ -132,7 +135,7 @@ public class OrdineService {
 
     @Transactional(readOnly = true)
     public List<Ordine> getOrdiniInPeriodo(Utente u, Date inizio, Date fine, int numPagina, int dimPagina, String ordinamento) throws RangeDateNonAccettabile, UtenteNonEsistenteONonValido {
-        if(inizio.compareTo(fine)>0){
+        if(inizio.after(fine)){
             throw new RangeDateNonAccettabile();
         }
         if(!utenteRepository.existsById(u.getId()) || !utentePresenteNelDb(u)){
@@ -163,7 +166,7 @@ public class OrdineService {
         }
     }
 
-    @Transactional(readOnly = false)
+    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class})
     public void rimuoviOrdine(int idOrdine) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, DettaglioOrdineNonValido, ProdottoNonValidoException, OrdineNonPiuAnnullabileException {
         Optional<Ordine> ordine = ordineRepository.findById(idOrdine);   //cerco ordine, alternativam potevo if ! ordineRepository.existsByid(idOrdine)
         if(ordine.isPresent()){

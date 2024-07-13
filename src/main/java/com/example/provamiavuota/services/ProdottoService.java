@@ -7,6 +7,7 @@ import com.example.provamiavuota.repositories.ProdottoRepository;
 import com.example.provamiavuota.repositories.PromozioneRepository;
 import com.example.provamiavuota.supports.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,10 @@ import java.util.Optional;
 
 @Service
 public class ProdottoService {
+
+    @Value("${variabili.listaStringhe}")
+    private List<String> categorieValide= new LinkedList<>();
+    //CATEGORIE VALIDE CONTENUTE NEL YML COME VARIABILI ACCESSIBILI OVUNQUE NEL CODICE
 
     @Autowired
     private ProdottoRepository prodottoRepository;
@@ -84,8 +89,8 @@ public class ProdottoService {
         }
     }
 
-    @Transactional(readOnly = false)
-    public void salvaProdotto(Prodotto prodotto) throws ProdottoGiaEsistenteException, FasciaDiPrezzoNonValidaException, ProdottoNonValidoException {
+    @Transactional(readOnly = false,rollbackFor = Exception.class)
+    public void salvaProdotto(Prodotto prodotto) throws ProdottoGiaEsistenteException, FasciaDiPrezzoNonValidaException, ProdottoNonValidoException, CategoriaNonValidaException {
         if(prodotto.getNome()!=null && prodottoRepository.existsByNomeIgnoreCaseAndNascosto(prodotto.getNome(),0)){
             throw new ProdottoGiaEsistenteException();
         }
@@ -95,13 +100,14 @@ public class ProdottoService {
         if(prodotto.getQuantita()<=0){
             throw new ProdottoNonValidoException();
         }
-        //FARE CONTROLLO CHE CATEGORIA SIA TRA QUELLE VALIDE, METTI TUTTO NEL FILE CON LE VARIABILI
-        //prodotto.getCategoria() COSI COME PER LL QUANDO FAI CONTROLLO SU PAGING
-        prodottoRepository.save(prodotto);//devo fare controlli su eventuale salvataggio andato male?
+        prodotto.setNascosto(0);//NASCOSTO SOLO DOPO ELIMINAZIONE
+        if(!categorieValide.contains(prodotto.getCategoria())){
+            throw new CategoriaNonValidaException();
+        }
+        prodottoRepository.save(prodotto);
     }
 
-    @Transactional(readOnly = false)
-    //controlla che prodotto non sia gia eliminato
+    @Transactional(readOnly = false,rollbackFor = Exception.class)
     public void rimuoviProdotto(int idProdotto) throws ProdottoNonPresenteNelDbExceptions, ProdottoGiaEliminatoException {
         Optional<Prodotto> prodotto = prodottoRepository.findById(idProdotto);   //cerco il prodotto, alternativam potevo if ! prodrepo.existsByid(idProdotto)
         if(prodotto.isPresent()){
@@ -145,8 +151,11 @@ public class ProdottoService {
     @Transactional(readOnly = false)
     public String aggiuntaAiPreferiti(int idProdotto) throws ProdottoNonPresenteNelDbExceptions {
         Optional<Prodotto> daAggiungereAiPreferiti=prodottoRepository.findById(idProdotto);
-        if(daAggiungereAiPreferiti.isPresent()){
+        if(daAggiungereAiPreferiti.isPresent() ){
             Prodotto p=daAggiungereAiPreferiti.get();
+            if(p.getNascosto()==1){
+                throw new ProdottoNonPresenteNelDbExceptions();
+            }
             if(p.getPreferito()==0){
                 p.setPreferito(1);
                 return "aggiunto";

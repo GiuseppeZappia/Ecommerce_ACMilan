@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -35,7 +34,8 @@ public class DettaglioOrdine {
 
     @ManyToOne
     @JoinColumn(name="id_ordine")
-    @JsonIgnore //perche a me interessa che nell'ordine si vedano i dettagli, mica vedere per ogni dettaglio lo stesso ordine e per evitare cicli al solito???
+    @JsonIgnore
+    //perche a me interessa che nell'ordine si vedano i dettagli, mica vedere per ogni dettaglio lo stesso ordine e per evitare cicli al solito???
     @ToString.Exclude
     private Ordine ordine;
 

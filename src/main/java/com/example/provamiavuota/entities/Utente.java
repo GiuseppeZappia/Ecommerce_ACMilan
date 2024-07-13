@@ -55,4 +55,10 @@ public class Utente {
     @ToString.Exclude
     private List<Ordine> ordini;
 
+    @OneToOne(mappedBy = "utente",cascade = CascadeType.MERGE)
+    @JsonIgnore
+    @ToString.Exclude
+    private Carrello carrello;
+
+
 }
