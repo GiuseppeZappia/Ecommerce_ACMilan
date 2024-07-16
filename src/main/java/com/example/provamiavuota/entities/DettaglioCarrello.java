@@ -12,7 +12,7 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 @Entity
-@Table(name="dettaglio_ordine", schema = "e_commerce_milan",uniqueConstraints = {
+@Table(name="dettaglio_carrello", schema = "e_commerce_milan",uniqueConstraints = {
         @UniqueConstraint(columnNames = {"idcarrello", "idprodotto"})
 })
 
@@ -20,7 +20,7 @@ public class DettaglioCarrello {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="iddettaglio_carrello",nullable = false)
+    @Column(name="id_dettaglio_carrello",nullable = false)
     private int id;
 
     @ManyToOne
@@ -31,7 +31,7 @@ public class DettaglioCarrello {
     private Carrello carrello;
 
     @ManyToOne(cascade=CascadeType.MERGE)
-    @JoinColumn(name="id_prodotto")
+    @JoinColumn(name="idprodotto")
     private Prodotto prodotto;
 
     @Basic

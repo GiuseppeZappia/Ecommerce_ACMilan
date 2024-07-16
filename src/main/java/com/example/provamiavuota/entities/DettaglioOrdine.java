@@ -15,7 +15,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @Entity
 @Table(name="dettaglio_ordine", schema = "e_commerce_milan",uniqueConstraints = {
-                                                            @UniqueConstraint(columnNames = {"id_prodotto", "id_ordine"})
+                                                            @UniqueConstraint(columnNames = {"id_ prodotto", "id_ordine"})
                                                             })
 public class DettaglioOrdine {
 

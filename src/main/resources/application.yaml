@@ -1,4 +1,10 @@
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/Progetto_E-commerce/protocol/openid-connect/certs
+          issuer-uri: http://localhost:8080/realms/Progetto_E-commerce
   application:
     name: provamiavuota
   datasource:
@@ -12,6 +18,36 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     hibernate:
       ddl-auto:
+
+jwt:
+  auth:
+    converter:
+      resource-id: admin-cli
+      principle-attribute: preferred_username
+
+keycloak:
+  realm: Progetto_E-commerce
+  auth-server-url: http://localhost:8080/
+  resource: provamiavuota
+  credentials:
+    secret: EijBYxp6Y9eUZ2zBCzbbHQQcy2eKn5hZ
+  ssl-required: external
+  bearer-only: true
+  principal-attribute: preferred_username
+  clientId: admin-cli
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+
+server:
+  port: 9090
+
+
+
+
+
 
 variabili:
   minimoPuntiUsabili: 100

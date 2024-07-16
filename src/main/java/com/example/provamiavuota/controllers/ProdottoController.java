@@ -9,6 +9,7 @@ import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 
@@ -105,6 +106,7 @@ public class ProdottoController {
 
     }
 
+    @PreAuthorize("hasRole('admin')")
     @PostMapping
     public ResponseEntity salvaProdotto(@RequestBody @Valid Prodotto prodotto) {
         try{
@@ -118,12 +120,13 @@ public class ProdottoController {
             return new ResponseEntity<>(new ResponseMessage("FASCIA DI PREZZO NON VALIDA"), HttpStatus.BAD_REQUEST);
         }catch (CategoriaNonValidaException e){
             return new ResponseEntity<>(new ResponseMessage("CATEGORIA NON VALIDA"), HttpStatus.BAD_REQUEST);
-//        }catch(Exception e){
-//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
+        }catch(Exception e){
+            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
         }
     }
 
 
+    @PreAuthorize("hasRole('admin')")
     @DeleteMapping("{idProdotto}")
     public ResponseEntity rimuoviProdotto(@PathVariable int  idProdotto) {
         try {
@@ -139,6 +142,7 @@ public class ProdottoController {
         }
     }
 
+    @PreAuthorize("hasRole('utente')")
     @GetMapping("/preferiti")
     public ResponseEntity getPreferiti(@RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
                                        @RequestParam(value = "dimPagina", defaultValue = "20") int dimPagina,
@@ -156,7 +160,7 @@ public class ProdottoController {
         return new ResponseEntity<>(listaProdotti, HttpStatus.OK);
     }
 
-
+    @PreAuthorize("hasRole('utente')")
     @PostMapping("{idProdotto}")
     public ResponseEntity aggiungiAiPreferiti(@PathVariable int  idProdotto) {
         try {
@@ -170,7 +174,6 @@ public class ProdottoController {
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'OPERAZIONE "), HttpStatus.BAD_REQUEST);
         }
     }
-
 
 }
 

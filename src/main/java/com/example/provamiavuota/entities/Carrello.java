@@ -27,18 +27,6 @@ public class Carrello {
     @ToString.Exclude
     private int id;
 
-    @Basic
-    @CreationTimestamp
-    //@Temporal(TemporalType.TIMESTAMP)
-    @Column(name="data_creazione")
-    private Date data_creazione;
-
-    @Basic
-    @CreationTimestamp
-    //@Temporal(TemporalType.TIMESTAMP)
-    @Column(name="data_ultima_mod")
-    private Date data_ultima_modifica;
-
     @OneToOne //un utente puo avere un solo carrello e un carrello corrisponde ad un solo utente
     @JoinColumn(name = "id_utente")
     private Utente utente;

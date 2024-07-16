@@ -30,6 +30,8 @@ public class OrdineService {
     private ProdottiPromoRepository prodPromoRepository;
     @Value("${variabili.minimoPuntiUsabili}")
     private int minimoPuntiUsabili;
+    @Autowired
+    private DettaglioCarrelloRepository dettaglioCarrelloRepository;
 
     @Transactional(readOnly = true)
     public List<Ordine> mostraTutti(int numPagina, int dimPagina, String ordinamento) {
@@ -61,7 +63,9 @@ public class OrdineService {
 
         for (DettaglioOrdine d : ordineSalvato.getListaDettagliOrdine()) {
             Prodotto prodottoDaAcquistare = prodottoRepository.findById(d.getProdotto().getId()).orElse(null);
-            if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()<=0){
+            //CONTROLLO CH ESISTA PRODOTTO, CHE QUANTITA SIANO VALIDE E CHE PREZZO PASSATOMI CORRISPONDA A QUELLO EFFETTIOVO PER QUEL PRODOTTO
+            if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()==null ||
+                    d.getPrezzoUnitario()<=0|| !d.getPrezzoUnitario().equals(prodottoDaAcquistare.getPrezzo())){
                 //controllo per verificare se i dettagli ordine sono ok, vanno fatti? se si, qui?
                 throw new OrdineNonValido();
             }
@@ -125,7 +129,6 @@ public class OrdineService {
         }
         //qua se rimetti save vedi che non è u ma utentepuntiaggiornati
         ordineSalvato.setUtente(u);//cosi restituisco ordine con utente con punti aggiornati
-        System.out.println(ordineSalvato);
         return ordineSalvato;
     }
 
@@ -171,7 +174,6 @@ public class OrdineService {
         Optional<Ordine> ordine = ordineRepository.findById(idOrdine);   //cerco ordine, alternativam potevo if ! ordineRepository.existsByid(idOrdine)
         if(ordine.isPresent()){
             Ordine daEliminare=ordine.get();
-            System.out.println("voglio eliminare: "+daEliminare);
             Date adesso=new Date();
             Date dataOrdine=daEliminare.getData();
             long millisecondiTrascorsi=Math.abs(dataOrdine.getTime()-adesso.getTime());
@@ -182,16 +184,16 @@ public class OrdineService {
             if(utenteOrdine==null){
                 throw new UtenteNonEsistenteONonValido();
             }
-            System.out.println("ordine fatto da: "+utenteOrdine);
             int puntiDaRestituire=utenteOrdine.getPuntifedelta()+ daEliminare.getPuntiusati();
-            System.out.println("RESTITUISCO "+ puntiDaRestituire+ " PUNTI");
             utenteOrdine.setPuntifedelta(puntiDaRestituire);//restituisco punti usati ad utente
+
             utenteOrdine.getOrdini().remove(daEliminare);//elimino questo tra i suoi ordini
             //RESTITUISCO SOLDI ???????
-            utenteRepository.save(utenteOrdine);
+            //NECESSARIO FARE LA SAVE VISTO CHE LA PRENDEVO DAL DB?
+//            utenteRepository.save(utenteOrdine);
+            double totaleSenzaScontiOPromo=0.0;
             for(DettaglioOrdine d: daEliminare.getListaDettagliOrdine()){
                 DettaglioOrdine dettaglioDaEliminare=dettaglioOrdineRepository.findById(d.getId()).orElse(null);
-                System.out.println("ELIMINANDO "+ dettaglioDaEliminare);
                 if(dettaglioDaEliminare==null){
                     throw new DettaglioOrdineNonValido();
                 }
@@ -199,13 +201,30 @@ public class OrdineService {
                 if(prodotto==null){
                     throw new ProdottoNonValidoException();
                 }
+                totaleSenzaScontiOPromo+=prodotto.getPrezzo();
                 int quantitaAggiornata=prodotto.getQuantita()+d.getQuantita();
-                System.out.println("AGGIORNO QUANTITA DI "+prodotto+ " SETTANDOLA A "+quantitaAggiornata);
                 prodotto.setQuantita(quantitaAggiornata);//reimposto quantita disponibile prodotto
                 prodotto.getDettaglioOrdini().remove(dettaglioDaEliminare);
-                prodottoRepository.save(prodotto);
+                //ANCHE QUI, NECESSARIE LE SAVE???
+//                prodottoRepository.save(prodotto);
+                //RIMETTO NEL CARRELLO I PRODOTTI DELL'ORDINE ANNULLATO COSI IN CASO PUO RIFARE ORDINE
+                DettaglioCarrello dettcarr=new DettaglioCarrello();
+                dettcarr.setProdotto(d.getProdotto());
+                dettcarr.setQuantita(d.getQuantita());
+                dettcarr.setPrezzoUnitario(d.getPrezzoUnitario());
+                dettcarr.setCarrello(utenteOrdine.getCarrello());
+                dettaglioCarrelloRepository.save(dettcarr);
+
                 dettaglioOrdineRepository.delete(d);
             }
+            //CONTROLLO SE DEVO TOGLIERE PUNTI AD UTENTE:
+            //-SE NON ERANO STATI USATI PUNTI E NON ERANO STATE APPLICATE PROMOZIONI AI PRODOTTI DEVO TOGLIERE I PUNTI CHE GLI AVEVO
+            //AGGIUNTO, CHE SONO  PREZZOTOTALE/2
+
+            if(daEliminare.getPuntiusati()==0 && totaleSenzaScontiOPromo==daEliminare.getTotale()) {
+                utenteOrdine.setPuntifedelta(utenteOrdine.getPuntifedelta()-(int )Math.ceil(totaleSenzaScontiOPromo/2));
+            }
+            //ELIMINO ORDINE ALLA FINE
             ordineRepository.delete(daEliminare);
         }else{
             throw new OrdineNonPresenteNelDbExceptions();

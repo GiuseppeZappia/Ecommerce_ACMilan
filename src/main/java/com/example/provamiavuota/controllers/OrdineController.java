@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -22,6 +23,7 @@ public class OrdineController {
     @Autowired
     private OrdineService ordineService;
 
+    @PreAuthorize("hasRole('admin')")
     @GetMapping("/elencoOrdini")
     public ResponseEntity getAll(@RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
                                  @RequestParam(value = "dimPagina", defaultValue = "20") int dimPagina,
@@ -38,6 +40,7 @@ public class OrdineController {
         return new ResponseEntity<>(listaOrdini, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('admin')")
     @PostMapping("/inserimento")
     public ResponseEntity inserimento(@RequestBody @Valid Ordine ordine) {
         try {
@@ -59,12 +62,12 @@ public class OrdineController {
             return new ResponseEntity<>(new ResponseMessage("MINIMA QUANTITA DI PUNTI FEDELTA DA USARE NON SODDISFATTA"), HttpStatus.BAD_REQUEST);
         } catch (QuantitaProdottoNonDisponibile e) {
             return new ResponseEntity<>(new ResponseMessage("QUANTITA PRODOTTO NON DISPONIBILE"), HttpStatus.BAD_REQUEST);
+        } catch (Exception e){
+            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
         }
-//        } catch (Exception e) {
-//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
-//        }
     }
 
+    @PreAuthorize("hasRole('utente')")
     @GetMapping("/elencoOrdini/{utente}/{DataInizio}/{DataFine}")
     public ResponseEntity getOrdiniNelPeriodo(@Valid @PathVariable("utente") Utente u,
                                               @PathVariable("DataInizio") @DateTimeFormat(pattern = "dd-MM-yyyy") Date DataInizio,
@@ -101,6 +104,7 @@ public class OrdineController {
         }
     }
 
+    @PreAuthorize("hasRole('utente')")
     @GetMapping("/elencoOrdini/perUtente")
     public ResponseEntity getOrdineByUtente(@RequestBody @Valid Utente utente,
                                             @RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
@@ -127,6 +131,7 @@ public class OrdineController {
     }
 
 
+    @PreAuthorize("hasRole('utente')")
     @DeleteMapping("{idOrdine}")
     public ResponseEntity rimozioneOrdine(@PathVariable int idOrdine){
         try{
@@ -148,6 +153,7 @@ public class OrdineController {
 
     }
 
+    @PreAuthorize("hasRole('utente')")
     @GetMapping("dettagliOrdine/{idOrdine}")
     public ResponseEntity getDettaglioOrdine(@PathVariable int idOrdine,
                                              @RequestParam(value = "numPagina", defaultValue = "0") int numPagina,

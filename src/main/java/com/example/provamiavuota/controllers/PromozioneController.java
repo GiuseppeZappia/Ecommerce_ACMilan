@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -41,6 +42,7 @@ public class PromozioneController {
     }
 
     //AGGIUNGI PRODOTTO A PROMO
+    @PreAuthorize("hasRole('admin')")
     @PostMapping("/aggiuntaApromo/{idPromozione}/{idProdotto}/{percentualeSconto}")
     public ResponseEntity aggiungiProdottoAPromo(@PathVariable int idPromozione,@PathVariable int idProdotto,@PathVariable int percentualeSconto) {
         try {
@@ -64,6 +66,7 @@ public class PromozioneController {
         }
     }
 
+    @PreAuthorize("hasRole('admin')")
     @PostMapping("/creaNuova")
     public ResponseEntity creaNuovaPromozione(@RequestBody @Valid Promozione promozione){
         try {
@@ -82,10 +85,9 @@ public class PromozioneController {
         } catch(PromozioneNonAttivaException e){
             return new ResponseEntity<>(new ResponseMessage("PROMOZIONE NON ATTIVA "), HttpStatus.BAD_REQUEST);
         } catch (PercentualeScontoNonValidaExceptions e){
-        return new ResponseEntity<>(new ResponseMessage("PERCENTUALE SCONTO NON VALIDA"),HttpStatus.BAD_REQUEST);
-
-//        }catch(Exception e){
-//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA CREAZIONE DELLA PROMOZIONE "), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ResponseMessage("PERCENTUALE SCONTO NON VALIDA"),HttpStatus.BAD_REQUEST);
+        }catch(Exception e){
+            return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA CREAZIONE DELLA PROMOZIONE "), HttpStatus.BAD_REQUEST);
         }
     }
 
