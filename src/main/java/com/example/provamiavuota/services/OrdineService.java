@@ -133,7 +133,7 @@ public class OrdineService {
     }
 
     private boolean utentePresenteNelDb(Utente utente) {
-        return utenteRepository.existsByNomeIgnoreCaseAndCognomeIgnoreCaseAndEmailIgnoreCaseAndUsernameIgnoreCaseAndPasswordAndPuntifedelta(utente.getNome(), utente.getCognome(), utente.getEmail(), utente.getUsername(), utente.getPassword(), utente.getPuntifedelta());
+        return utenteRepository.existsByNomeIgnoreCaseAndCognomeIgnoreCaseAndEmailIgnoreCaseAndPuntifedelta(utente.getNome(), utente.getCognome(), utente.getEmail(),utente.getPuntifedelta());
     }
 
     @Transactional(readOnly = true)

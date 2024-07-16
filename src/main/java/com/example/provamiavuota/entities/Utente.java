@@ -37,16 +37,6 @@ public class Utente {
     private String email;
 
     @Basic
-    @Column(name="username",unique=true)
-    private String username;
-
-    @Basic
-    @Column(name="password")
-    //@JsonIgnore //non voglio lo serializzi sulla rete
-    @ToString.Exclude
-    private String password;
-
-    @Basic
     @Column(name="punti_fedelta")
     private int puntifedelta;
 

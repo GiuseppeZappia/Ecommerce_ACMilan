@@ -27,13 +27,13 @@ public class SecurityConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth.requestMatchers(
-                antMatcher("/prodotti/elencoDisponibili"),
-                antMatcher("/prodotti/percategoria"),
-                antMatcher("/prodotti/perFasciaPrezzo"),
-                antMatcher("/prodotti/perNome/{nomeProdotto}"),
-                antMatcher("/prodotti/ricercaAvanzata"),
+                antMatcher("/prodotti/elencoDisponibili/**"),
+                antMatcher("/prodotti/percategoria/**"),
+                antMatcher("/prodotti/perFasciaPrezzo/**"),
+                antMatcher("/prodotti/perNome/{nomeProdotto}/**"),
+                antMatcher("/prodotti/ricercaAvanzata/**"),
                 antMatcher("/promozioni/elenco"),
-                antMatcher("/utenti")
+                antMatcher("/utenti/**")
         ).permitAll().anyRequest().authenticated());
         //QUINDI HO SOPRA QUEGLI ENDPOINT ACCESSIBILI ANCHE SENZA NESSUNA AUTENTICAZIONE
         http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)));
