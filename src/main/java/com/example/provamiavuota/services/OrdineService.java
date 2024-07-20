@@ -1,8 +1,10 @@
 package com.example.provamiavuota.services;
 
+import com.example.provamiavuota.authentication.Utils;
 import com.example.provamiavuota.entities.*;
 import com.example.provamiavuota.repositories.*;
 import com.example.provamiavuota.supports.exceptions.*;
+import jdk.jshell.execution.Util;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +54,8 @@ public class OrdineService {
     @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class})
     public Ordine salvaOrdine(@NotNull Ordine ordine) throws QuantitaProdottoNonDisponibile, OrdineNonValido, PuntiFedeltaNonDisponibili, UtenteNonEsistenteONonValido, MinimoPuntiRichiestoNonSoddisfatto {
         boolean applicataPromozione = false;
+        double totaleOrdineRicevuto= ordine.getTotale();
+        System.out.println("APPENA RICEVUTO "+ordine.getTotale());
         //serve per aggiunta punti ad utente che dipende se c'erano prod in promo nell'ordine o meno
         Ordine ordineSalvato=ordineRepository.save(ordine);
         //QUI CONTROLLO che l'ordine contenga qualche prodotto
@@ -59,7 +63,7 @@ public class OrdineService {
             throw new OrdineNonValido();
         }
 
-        double totalePrevistoSenzaSconti=0;
+        double totalePrevistoSenzaSconti=0.0;
 
         for (DettaglioOrdine d : ordineSalvato.getListaDettagliOrdine()) {
             Prodotto prodottoDaAcquistare = prodottoRepository.findById(d.getProdotto().getId()).orElse(null);
@@ -67,6 +71,7 @@ public class OrdineService {
             if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()==null ||
                     d.getPrezzoUnitario()<=0|| !d.getPrezzoUnitario().equals(prodottoDaAcquistare.getPrezzo())){
                 //controllo per verificare se i dettagli ordine sono ok, vanno fatti? se si, qui?
+                System.out.println("IN ORDINE ERRORE MIO 1");
                 throw new OrdineNonValido();
             }
             if (prodottoDaAcquistare.getQuantita() < d.getQuantita())
@@ -96,7 +101,7 @@ public class OrdineService {
         }
 
         //PREZZO NON È QUELLO CHE DOVREBBE ESSERE
-        if(ordineSalvato.getTotale()!=totalePrevistoSenzaSconti){
+        if(totaleOrdineRicevuto!=totalePrevistoSenzaSconti){
             throw new OrdineNonValido();
         }
         //qua ha senso lasciare solo la findByid? perche se mi viene passato un id valido ma gli altri campi no come faccio? (in questo caso controllo come sotto)
@@ -137,16 +142,22 @@ public class OrdineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Ordine> getOrdiniInPeriodo(Utente u, Date inizio, Date fine, int numPagina, int dimPagina, String ordinamento) throws RangeDateNonAccettabile, UtenteNonEsistenteONonValido {
+    public List<Ordine> getOrdiniInPeriodo(//Utente u,
+                                           Date inizio, Date fine, int numPagina, int dimPagina, String ordinamento) throws RangeDateNonAccettabile, UtenteNonEsistenteONonValido {
         if(inizio.after(fine)){
             throw new RangeDateNonAccettabile();
         }
-        if(!utenteRepository.existsById(u.getId()) || !utentePresenteNelDb(u)){
+        if(!utenteRepository.existsById(Utils.getIdUtente()) ){
             throw new UtenteNonEsistenteONonValido();
         }
+        Optional<Utente> u= utenteRepository.findById(Utils.getIdUtente());
+        if(u.isEmpty()){
+            throw new UtenteNonEsistenteONonValido();
+        }
+        Utente utente=u.get();
         Sort.Direction tipoOrdinamento = Sort.Direction.DESC;
         Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento, ordinamento));
-        Page<Ordine> risultatiPagine = ordineRepository.ricercaOrdiniInPeriodo(u,inizio,fine,paging);
+        Page<Ordine> risultatiPagine = ordineRepository.ricercaOrdiniInPeriodo(utente,inizio,fine,paging);
         if (risultatiPagine.hasContent()) {
             return risultatiPagine.getContent();
         } else {
@@ -155,10 +166,16 @@ public class OrdineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Ordine> ordiniCliente(Utente u,int numPagina, int dimPagina, String ordinamento) throws UtenteNonEsistenteONonValido{
-        if(!utenteRepository.existsById(u.getId()) || !utentePresenteNelDb(u)){
+    public List<Ordine> ordiniCliente(//Utente u,
+                                      int numPagina, int dimPagina, String ordinamento) throws UtenteNonEsistenteONonValido{
+        if(!utenteRepository.existsById(Utils.getIdUtente())){
             throw new UtenteNonEsistenteONonValido();
         }
+        Optional<Utente> utente=utenteRepository.findById(Utils.getIdUtente());
+        if(utente.isEmpty()){
+            throw new UtenteNonEsistenteONonValido();
+        }
+        Utente u=utente.get();
         Sort.Direction tipoOrdinamento = Sort.Direction.DESC;
         Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento, ordinamento));
         Page<Ordine> risultatiPagine = ordineRepository.findByUtente(u,paging);
@@ -169,8 +186,8 @@ public class OrdineService {
         }
     }
 
-    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class})
-    public void rimuoviOrdine(int idOrdine) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, DettaglioOrdineNonValido, ProdottoNonValidoException, OrdineNonPiuAnnullabileException {
+    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class,TentativoNonAutorizzato.class})
+    public void rimuoviOrdine(int idOrdine) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, DettaglioOrdineNonValido, ProdottoNonValidoException, OrdineNonPiuAnnullabileException, TentativoNonAutorizzato {
         Optional<Ordine> ordine = ordineRepository.findById(idOrdine);   //cerco ordine, alternativam potevo if ! ordineRepository.existsByid(idOrdine)
         if(ordine.isPresent()){
             Ordine daEliminare=ordine.get();
@@ -181,16 +198,25 @@ public class OrdineService {
                 throw new OrdineNonPiuAnnullabileException();
             }
             Utente utenteOrdine=utenteRepository.findById(daEliminare.getUtente().getId()).orElse(null);
-            if(utenteOrdine==null){
+
+            Optional<Utente> u=utenteRepository.findById(Utils.getIdUtente());
+            if(u.isEmpty()){
                 throw new UtenteNonEsistenteONonValido();
             }
+            Utente utente=u.get();
+            //SE RICEVO NULL O UTENTE PRESENTE NELL'ORDINE NON È QUELLO DEL TOKEN
+            if(utenteOrdine==null||utenteOrdine.getId()!=utente.getId()){
+                throw new UtenteNonEsistenteONonValido();
+            }
+            if(!utente.getOrdini().contains(ordine.get())){
+                throw new TentativoNonAutorizzato();
+            }
+            System.out.println("l'ordine usava "+daEliminare.getPuntiusati());
             int puntiDaRestituire=utenteOrdine.getPuntifedelta()+ daEliminare.getPuntiusati();
             utenteOrdine.setPuntifedelta(puntiDaRestituire);//restituisco punti usati ad utente
 
             utenteOrdine.getOrdini().remove(daEliminare);//elimino questo tra i suoi ordini
             //RESTITUISCO SOLDI ???????
-            //NECESSARIO FARE LA SAVE VISTO CHE LA PRENDEVO DAL DB?
-//            utenteRepository.save(utenteOrdine);
             double totaleSenzaScontiOPromo=0.0;
             for(DettaglioOrdine d: daEliminare.getListaDettagliOrdine()){
                 DettaglioOrdine dettaglioDaEliminare=dettaglioOrdineRepository.findById(d.getId()).orElse(null);
@@ -201,7 +227,7 @@ public class OrdineService {
                 if(prodotto==null){
                     throw new ProdottoNonValidoException();
                 }
-                totaleSenzaScontiOPromo+=prodotto.getPrezzo();
+                totaleSenzaScontiOPromo+=prodotto.getPrezzo()*d.getQuantita();
                 int quantitaAggiornata=prodotto.getQuantita()+d.getQuantita();
                 prodotto.setQuantita(quantitaAggiornata);//reimposto quantita disponibile prodotto
                 prodotto.getDettaglioOrdini().remove(dettaglioDaEliminare);
@@ -221,6 +247,8 @@ public class OrdineService {
             //-SE NON ERANO STATI USATI PUNTI E NON ERANO STATE APPLICATE PROMOZIONI AI PRODOTTI DEVO TOGLIERE I PUNTI CHE GLI AVEVO
             //AGGIUNTO, CHE SONO  PREZZOTOTALE/2
 
+            System.out.println("TOTALE SENZA SCONTI O PROMO:  "+totaleSenzaScontiOPromo);
+            System.out.println("TOTALE INVECE DA ELIMINARE: " +daEliminare.getTotale());
             if(daEliminare.getPuntiusati()==0 && totaleSenzaScontiOPromo==daEliminare.getTotale()) {
                 utenteOrdine.setPuntifedelta(utenteOrdine.getPuntifedelta()-(int )Math.ceil(totaleSenzaScontiOPromo/2));
             }
@@ -233,21 +261,25 @@ public class OrdineService {
 
 
     @Transactional(readOnly = true)
-    public List<Ordine> prova(int id) throws UtenteNonEsistenteONonValido {
-        Optional<Utente> utente = utenteRepository.findById(id);
-        if (utente.isEmpty()) {//controllo innanzitutto se esiste con quell'id e poi se gli altri campi presenti nell'ordine sono validi
-            throw new UtenteNonEsistenteONonValido();
-        }
-        return utente.get().getOrdini();
-    }
-
-    @Transactional(readOnly = true)
-    public List<DettaglioOrdine> trovaDettagliOrdine(int idOrdine,int numPagina, int dimPagina,String ordinamento) throws OrdineNonPresenteNelDbExceptions {
+    public List<DettaglioOrdine> trovaDettagliOrdine(int idOrdine,int numPagina, int dimPagina,String ordinamento) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, TentativoNonAutorizzato {
         Sort.Direction tipoOrdinamento = Sort.Direction.DESC;
         Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento, ordinamento));
         Optional<Ordine> ordine = ordineRepository.findById(idOrdine);
         if (ordine.isEmpty()) {
             throw new OrdineNonPresenteNelDbExceptions();
+        }
+        Utente utenteOrdine=utenteRepository.findById(ordine.get().getUtente().getId()).orElse(null);
+        Optional<Utente> u=utenteRepository.findById(Utils.getIdUtente());
+        if(u.isEmpty()){
+            throw new UtenteNonEsistenteONonValido();
+        }
+        Utente utente=u.get();
+        //SE RICEVO NULL O UTENTE PRESENTE NELL'ORDINE NON È QUELLO DEL TOKEN
+        if(utenteOrdine==null||utenteOrdine.getId()!=utente.getId()){
+            throw new UtenteNonEsistenteONonValido();
+        }
+        if(!utente.getOrdini().contains(ordine.get())){
+            throw new TentativoNonAutorizzato();
         }
         Page<DettaglioOrdine> risultatiPagine = dettaglioOrdineRepository.findByOrdine(ordine.get(),paging);
         if (risultatiPagine.hasContent()) {

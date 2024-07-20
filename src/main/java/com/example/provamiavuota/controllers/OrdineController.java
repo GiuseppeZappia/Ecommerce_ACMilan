@@ -68,8 +68,8 @@ public class OrdineController {
     }
 
     @PreAuthorize("hasRole('utente')")
-    @GetMapping("/elencoOrdini/{utente}/{DataInizio}/{DataFine}")
-    public ResponseEntity getOrdiniNelPeriodo(@Valid @PathVariable("utente") Utente u,
+    @GetMapping("/elencoOrdini/{DataInizio}/{DataFine}")
+    public ResponseEntity getOrdiniNelPeriodo(//@Valid @PathVariable("utente") Utente u,
                                               @PathVariable("DataInizio") @DateTimeFormat(pattern = "dd-MM-yyyy") Date DataInizio,
                                               @PathVariable("DataFine") @DateTimeFormat(pattern = "dd-MM-yyyy") Date DataFine,
                                               @RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
@@ -90,7 +90,8 @@ public class OrdineController {
             cal.set(Calendar.SECOND, 59);
             cal.set(Calendar.MILLISECOND, 999);
             DataFine = cal.getTime();
-            List<Ordine> listaOrdini = ordineService.getOrdiniInPeriodo(u, DataInizio, DataFine, numPagina, dimPagina, ordinamento);
+//            List<Ordine> listaOrdini = ordineService.getOrdiniInPeriodo(u, DataInizio, DataFine, numPagina, dimPagina, ordinamento);
+            List<Ordine> listaOrdini=ordineService.getOrdiniInPeriodo(DataInizio,DataFine,numPagina,dimPagina,ordinamento);
             if (listaOrdini.isEmpty()) {
                 return new ResponseEntity<>(new ResponseMessage("NESSUN ACQUISTO EFFETTUATO DURANTE QUESTO PERIODO O PRESENTE IN QUESTA PAGINA"), HttpStatus.OK);
             }
@@ -106,7 +107,7 @@ public class OrdineController {
 
     @PreAuthorize("hasRole('utente')")
     @GetMapping("/elencoOrdini/perUtente")
-    public ResponseEntity getOrdineByUtente(@RequestBody @Valid Utente utente,
+    public ResponseEntity getOrdineByUtente(//@RequestBody @Valid Utente utente, //METODO CHIAMATO SOLO SE UTENTE é AUTENTICATO COSI HO TOKEN PER PRENDERLO
                                             @RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
                                             @RequestParam(value = "dimPagina", defaultValue = "20") int dimPagina,
                                             @RequestParam(value = "ordinamento", defaultValue = "data") String ordinamento
@@ -118,7 +119,8 @@ public class OrdineController {
                 return new ResponseEntity<>(new ResponseMessage("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI"), HttpStatus.BAD_REQUEST);
             }
 
-            List<Ordine> listaOrdini = ordineService.ordiniCliente(utente, numPagina, dimPagina, ordinamento);
+//            List<Ordine> listaOrdini = ordineService.ordiniCliente(utente, numPagina, dimPagina, ordinamento);
+            List<Ordine> listaOrdini = ordineService.ordiniCliente(numPagina, dimPagina, ordinamento);
             if (listaOrdini.isEmpty()) {
                 return new ResponseEntity<>(new ResponseMessage("NESSUN RISULTATO O NUMERO DI PAGINA NON VALIDO"), HttpStatus.OK);
             }
@@ -136,7 +138,7 @@ public class OrdineController {
     public ResponseEntity rimozioneOrdine(@PathVariable int idOrdine){
         try{
             ordineService.rimuoviOrdine(idOrdine);
-            return new ResponseEntity<>(new ResponseMessage("RIMOZIONE ANDATA A BUON FINE"),HttpStatus.OK );
+            return new ResponseEntity<>("RIMOZIONE ANDATA A BUON FINE",HttpStatus.OK );
         }catch (OrdineNonPiuAnnullabileException e){
             return new ResponseEntity<>(new ResponseMessage("L'ORDINE NON È PIU' ANNULLABILE, È TRASCORSA PIU' DI UN'ORA DALLA SUA ACCETTAZIONE"),HttpStatus.BAD_REQUEST);
         }catch (UtenteNonEsistenteONonValido e){
@@ -147,6 +149,8 @@ public class OrdineController {
             return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON ESISTENTE O NON VALIDO"),HttpStatus.BAD_REQUEST);
         } catch (OrdineNonPresenteNelDbExceptions e){
             return new ResponseEntity<>(new ResponseMessage("ORDINE NON PRESENTE NEL DATABASE"),HttpStatus.BAD_REQUEST);
+        }catch (TentativoNonAutorizzato e){
+            return new ResponseEntity<>(new ResponseMessage("TENTATIVO NON AUTORIZZATO"), HttpStatus.BAD_REQUEST);
         } catch (Exception e){
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA RIMOZIONE"), HttpStatus.BAD_REQUEST);
         }
@@ -171,10 +175,14 @@ public class OrdineController {
                 return new ResponseEntity<>(new ResponseMessage("NESSUN DETTAGLIO ASSOCIATO A QUESTO ORDINE O PAGINA VUOTA"),HttpStatus.OK);
             }
             return new ResponseEntity<>(listaDettagli, HttpStatus.OK);
-        }catch(OrdineNonPresenteNelDbExceptions e){
-        return new ResponseEntity(new ResponseMessage("ORDINE NON PRESENTE "), HttpStatus.BAD_REQUEST);
+        }catch(OrdineNonPresenteNelDbExceptions e) {
+            return new ResponseEntity<>(new ResponseMessage("ORDINE NON PRESENTE "), HttpStatus.BAD_REQUEST);
+        }catch (UtenteNonEsistenteONonValido e) {
+            return new ResponseEntity<>(new ResponseMessage("UTENTE NON PRESENTE O NON VALIDO"), HttpStatus.BAD_REQUEST);
+        }catch (TentativoNonAutorizzato e){
+            return new ResponseEntity<>(new ResponseMessage("TENTATIVO NON AUTORIZZATO"), HttpStatus.BAD_REQUEST);
         }catch(Exception e){
-            return new ResponseEntity(new ResponseMessage("ERRORE NELLA RICERCA"), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA RICERCA"), HttpStatus.BAD_REQUEST);
         }
     }
 

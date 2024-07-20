@@ -6,7 +6,6 @@ import com.example.provamiavuota.supports.ResponseMessage;
 import com.example.provamiavuota.supports.exceptions.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -33,11 +32,11 @@ public class PromozioneController {
             return new ResponseEntity<>(new ResponseMessage("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI"), HttpStatus.BAD_REQUEST);
         }
 
-        List<Promozione> listaProdotti= promozioneService.elencoPromozioni(numPagina, dimPagina, ordinamento);
-        if (listaProdotti.isEmpty()) {
+        List<Promozione> listaPromo= promozioneService.elencoPromozioni(numPagina, dimPagina, ordinamento);
+        if (listaPromo.isEmpty()) {
             return new ResponseEntity<>(new ResponseMessage("NESSUN RISULTATO O NUMERO DI PAGINA NON VALIDO"), HttpStatus.OK);
         }
-        return new ResponseEntity<>(listaProdotti, HttpStatus.OK);
+        return new ResponseEntity<>(listaPromo, HttpStatus.OK);
 
     }
 
@@ -90,5 +89,20 @@ public class PromozioneController {
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA CREAZIONE DELLA PROMOZIONE "), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @PreAuthorize("hasRole('utente')")
+    @GetMapping("/coinvolto/{idProdotto}")
+    public ResponseEntity coinvolto(@PathVariable int idProdotto){
+        try {
+            boolean ret = promozioneService.coinvolto(idProdotto);
+            return new ResponseEntity(ret, HttpStatus.OK);
+        }catch(ProdottoNonValidoException e){
+            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO"), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception e){
+            return new ResponseEntity(new ResponseMessage("ERRORE"),HttpStatus.BAD_REQUEST);
+        }
+    }
+
 
 }

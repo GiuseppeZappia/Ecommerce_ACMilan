@@ -2,11 +2,15 @@ package com.example.provamiavuota.controllers;
 
 import com.example.provamiavuota.dto.LoginDTO;
 import com.example.provamiavuota.dto.UtenteRegistrDTO;
+import com.example.provamiavuota.entities.Utente;
 import com.example.provamiavuota.services.RegistrazioneService;
 import com.example.provamiavuota.supports.ResponseMessage;
 import com.example.provamiavuota.supports.exceptions.ErroreLoginException;
 import com.example.provamiavuota.supports.exceptions.ErroreLogoutException;
 import com.example.provamiavuota.supports.exceptions.ErroreNellaRegistrazioneUtenteException;
+import com.example.provamiavuota.supports.exceptions.UtenteNonEsistenteONonValido;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,22 +33,38 @@ public class RegistrazioneController {
         } catch (ErroreNellaRegistrazioneUtenteException e) {
             return new ResponseEntity<>(new ResponseMessage("PROBLEMA NELLA REGISTRAZIONE DELL'UTENTE"), HttpStatus.BAD_REQUEST);
         }catch (Exception e) {
-            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(new ResponseMessage("PROBLEMA NELLA REGISTRAZIONE DELL'UTENTE"), HttpStatus.BAD_REQUEST);
         }
     }
 
 
-    @PostMapping("/login")
-    public ResponseEntity loginUtente(@NotNull @RequestBody LoginDTO loginDTO) {
+
+    @GetMapping("/trovaUtente")
+    private ResponseEntity getUtente() {
         try {
-            return registrazioneService.loginUser(loginDTO);
-        } catch (ErroreLoginException e) {
-            return new ResponseEntity<>(new ResponseMessage("CREDENZIALI NON VALIDE"), HttpStatus.BAD_REQUEST);
-        }catch (Exception e) {
-            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+            Utente u=registrazioneService.trovaUtente();
+            if(u==null) {
+                return null;
+            }
+            return new ResponseEntity<>(u, HttpStatus.OK);
+        }catch (UtenteNonEsistenteONonValido e) {
+            return new ResponseEntity<>(new ResponseMessage("NESSUN UTENTE AUTENTICATO"),HttpStatus.BAD_REQUEST);
+        }catch (Exception e){
+            return new ResponseEntity<>(new ResponseMessage("ERRORE OTTENIMENTO UTENTE"),HttpStatus.BAD_REQUEST);
         }
-
     }
+
+//    @PostMapping("/login")
+//    public ResponseEntity loginUtente(@NotNull @RequestBody LoginDTO loginDTO) {
+//        try {
+//            return registrazioneService.loginUser(loginDTO);
+//        } catch (ErroreLoginException e) {
+//            return new ResponseEntity<>(new ResponseMessage("CREDENZIALI NON VALIDE"), HttpStatus.BAD_REQUEST);
+//        }catch (Exception e) {
+//            return new ResponseEntity<>(new ResponseMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+//        }
+//
+//    }
 
 
     @PostMapping("/logout/{refreshToken}")

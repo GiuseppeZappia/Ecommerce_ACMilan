@@ -39,8 +39,16 @@ public interface ProdottoRepository extends JpaRepository<Prodotto,Integer> {
     int countByCategoriaIgnoreCase(String categoria);
     int countByPrezzo(Double prezzo);
     int countByCategoriaIgnoreCaseAndPrezzo(String categoria,Double prezzo);
+    @Query( "SELECT p "+
+            "FROM Prodotto p "+
+            "WHERE (p.prezzo >= ?1 OR ?1 IS NULL) AND " +
+            "      (p.prezzo <=?2 OR ?2 IS NULL) AND " +
+            "      (p.nome LIKE ?3 OR ?3 IS NULL) AND " +
+            "      (p.categoria LIKE ?4 OR ?4 IS NULL) AND " +
+            "      (p.quantita >= ?5 OR ?5 IS NULL) AND p.nascosto = 0 "
+    )
     Page<Prodotto> findAllByNascosto(Pageable paging ,int nascosto);
+    Page<Prodotto> findByQuantitaGreaterThanAndNascosto(Pageable paging,int quantita, int nascosto);
     int countByNascosto(int nascosto);
 
-    Page<Prodotto> findAllByPreferito(Pageable paging, int i);
 }

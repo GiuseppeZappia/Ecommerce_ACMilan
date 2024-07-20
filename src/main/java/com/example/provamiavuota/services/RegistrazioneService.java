@@ -1,5 +1,6 @@
 package com.example.provamiavuota.services;
 
+import com.example.provamiavuota.authentication.Utils;
 import com.example.provamiavuota.dto.LoginDTO;
 import com.example.provamiavuota.dto.UtenteRegistrDTO;
 import com.example.provamiavuota.entities.Carrello;
@@ -10,6 +11,7 @@ import com.example.provamiavuota.supports.ResponseMessage;
 import com.example.provamiavuota.supports.exceptions.ErroreLoginException;
 import com.example.provamiavuota.supports.exceptions.ErroreLogoutException;
 import com.example.provamiavuota.supports.exceptions.ErroreNellaRegistrazioneUtenteException;
+import com.example.provamiavuota.supports.exceptions.UtenteNonEsistenteONonValido;
 import jakarta.ws.rs.core.Response;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
@@ -50,6 +52,8 @@ public class RegistrazioneService {
     private String passwordAdmin = "admin";
     @Autowired
     private CarrelloRepository carrelloRepository;
+    @Autowired
+    private UtenteRepository userRepository;
 
 
     @Transactional(readOnly = false, rollbackFor = Exception.class)
@@ -57,6 +61,20 @@ public class RegistrazioneService {
         if (user == null) {
             throw new ErroreNellaRegistrazioneUtenteException();
         }
+
+        //SALVO NEL DB IL MIO UTENTE
+        Utente u = new Utente();
+        u.setPuntifedelta(0);
+        u.setOrdini(new ArrayList<>());
+        u.setNome(user.firstName());
+        u.setCognome(user.lastName());
+        u.setEmail(user.email());
+        Carrello c = new Carrello();
+        c.setUtente(u);
+        c.setAttivo(1);
+        c.setListaDettagliCarrello(new LinkedList<>());
+        Utente utente_salvato=utenteRepository.save(u);
+        carrelloRepository.save(c);
 
         Keycloak keycloak = KeycloakBuilder.builder()
                 .serverUrl(serverUrl)
@@ -87,7 +105,12 @@ public class RegistrazioneService {
 
         userk.setCredentials(list);
 
-        userk.setAttributes(Collections.singletonMap("origin", Arrays.asList("demo")));
+        // Aggiungi l'attributo idUtente
+        Integer idToSave = utente_salvato.getId();
+        Map<String, List<String>> attributes = new HashMap<>();
+        attributes.put("idUtente", Collections.singletonList(idToSave.toString()));
+        attributes.put("origin",Arrays.asList("demo"));
+        userk.setAttributes(attributes);
 
         RealmResource realmResource = keycloak.realm(realm);
         UsersResource usersRessource = realmResource.users();
@@ -102,20 +125,8 @@ public class RegistrazioneService {
             RoleRepresentation userRole = clientResource.roles().get("utente").toRepresentation();
             usersRessource.get(userId).roles().clientLevel(clientResource.toRepresentation().getId()).add(Collections.singletonList(userRole));
 
-            //SALVO NEL DB IL MIO UTENTE
-            Utente u = new Utente();
-            u.setPuntifedelta(0);
-            u.setOrdini(new ArrayList<>());
-            u.setNome(user.firstName());
-            u.setCognome(user.lastName());
-            u.setEmail(user.email());
-            Carrello c = new Carrello();
-            c.setUtente(u);
-            c.setAttivo(1);
-            c.setListaDettagliCarrello(new LinkedList<>());
-            utenteRepository.save(u);
-            carrelloRepository.save(c);
-            return new ResponseEntity(user, HttpStatus.OK);
+            //SU POSTMAN PORTA ID=0 PERCHE RESTITUISCO DTO A CUI NON HO AGGIORNATO ID
+            return new ResponseEntity(utente_salvato, HttpStatus.OK);
 
         } else {
             throw new ErroreNellaRegistrazioneUtenteException();
@@ -123,28 +134,27 @@ public class RegistrazioneService {
     }
 
 
-    public ResponseEntity loginUser(LoginDTO loginDTO) throws ErroreLoginException {
-        if (loginDTO == null) {
-            throw new ErroreLoginException();
-        }
-        Keycloak keycloakLogin = KeycloakBuilder.builder()
-                .serverUrl(serverUrl)
-                .realm(realm)
-                .clientId(clientId)
-                .clientSecret(secret)
-                .username(loginDTO.username())
-                .password(loginDTO.password())
-                .grantType(OAuth2Constants.PASSWORD)
-                .build();
-
-        AccessTokenResponse tokenResponse = keycloakLogin.tokenManager().grantToken();
-        if (tokenResponse == null || tokenResponse.getToken() == null || tokenResponse.getToken().isEmpty()) {
-            throw new ErroreLoginException();
-        }
-
-        return new ResponseEntity<>(tokenResponse, HttpStatus.OK);
-
-    }
+//    public ResponseEntity loginUser(LoginDTO loginDTO) throws ErroreLoginException {
+//        if (loginDTO == null) {
+//            throw new ErroreLoginException();
+//        }
+//        Keycloak keycloakLogin = KeycloakBuilder.builder()
+//                .serverUrl(serverUrl)
+//                .realm(realm)
+//                .clientId(clientId)
+//                .clientSecret(secret)
+//                .username(loginDTO.username())
+//                .password(loginDTO.password())
+//                .grantType(OAuth2Constants.PASSWORD)
+//                .build();
+//
+//        AccessTokenResponse tokenResponse = keycloakLogin.tokenManager().grantToken();
+//        if (tokenResponse == null || tokenResponse.getToken() == null || tokenResponse.getToken().isEmpty()) {
+//            throw new ErroreLoginException();
+//        }
+//
+//        return new ResponseEntity<>(tokenResponse, HttpStatus.OK);
+//    }
 
     public ResponseEntity logoutUser(String refreshToken) throws ErroreLogoutException {
         try {
@@ -163,4 +173,21 @@ public class RegistrazioneService {
             throw new ErroreLogoutException();
         }
     }
+
+    @Transactional(readOnly = true)
+    public Utente trovaUtente() throws Exception {
+        Integer idUtente=Utils.getIdUtente();
+        if(idUtente==null){
+            return null;
+        }
+        Optional<Utente> u=utenteRepository.findById(idUtente);
+        if (u.isPresent()) {
+            return u.get();
+        }
+        else {
+            throw new UtenteNonEsistenteONonValido();
+        }
+    }
+
+
 }

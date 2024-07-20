@@ -1,8 +1,8 @@
 package com.example.provamiavuota.supports;
 
 public class ResponseMessage {
-    private String messagio;
+    private String messaggio;
 
-    public ResponseMessage(String messagio) {this.messagio = messagio;}
-    public String getMessagio() {return messagio;}
+    public ResponseMessage(String messaggio) {this.messaggio = messaggio;}
+    public String getMessaggio() {return messaggio;}
 }

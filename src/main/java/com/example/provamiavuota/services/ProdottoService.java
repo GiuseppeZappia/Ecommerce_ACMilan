@@ -38,7 +38,7 @@ public class ProdottoService {
     public List<Prodotto> elencoProdotti(int numPagina,int dimPagina,String ordinamento) {
         Sort.Direction tipoOrdinamento=Sort.Direction.ASC;
         Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento,ordinamento));
-        Page<Prodotto> risultatiPagine = prodottoRepository.findAllByNascosto(paging,0);//cerco tutti   quelli non elmiinati
+        Page<Prodotto> risultatiPagine = prodottoRepository.findByQuantitaGreaterThanAndNascosto(paging,0,0);//cerco tutti quelli non elmiinati
         if (risultatiPagine.hasContent()){
             return risultatiPagine.getContent();
         }
@@ -132,41 +132,41 @@ public class ProdottoService {
     }
 
 
-    //DEVO MOSTRARE QUELLI NON PIU IN VENDITA O NO? FACCIO CHIAMATA DOVE CONTROLLO ANCHE SE HIDEEN??
-    @Transactional(readOnly = true)
-    public List<Prodotto> getPreferiti(int numPagina,int dimPagina,String ordinamento){
-        Sort.Direction tipoOrdinamento=Sort.Direction.ASC;
-        Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento,ordinamento));
-        Page<Prodotto> risultatiPagine = prodottoRepository.findAllByPreferito(paging,1);//cerco tutti i preferiti
-        if (risultatiPagine.hasContent()){
-            return risultatiPagine.getContent();
-        }
-        else {
-            return new LinkedList<>();
-        }
+//    //DEVO MOSTRARE QUELLI NON PIU IN VENDITA O NO? FACCIO CHIAMATA DOVE CONTROLLO ANCHE SE HIDEEN??
+//    @Transactional(readOnly = true)
+//    public List<Prodotto> getPreferiti(int numPagina,int dimPagina,String ordinamento){
+//        Sort.Direction tipoOrdinamento=Sort.Direction.ASC;
+//        Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento,ordinamento));
+//        Page<Prodotto> risultatiPagine = prodottoRepository.findAllByPreferito(paging,1);//cerco tutti i preferiti
+//        if (risultatiPagine.hasContent()){
+//            return risultatiPagine.getContent();
+//        }
+//        else {
+//            return new LinkedList<>();
+//        }
+//
+//    }
 
-    }
 
-
-    @Transactional(readOnly = false)
-    public String aggiuntaAiPreferiti(int idProdotto) throws ProdottoNonPresenteNelDbExceptions {
-        Optional<Prodotto> daAggiungereAiPreferiti=prodottoRepository.findById(idProdotto);
-        if(daAggiungereAiPreferiti.isPresent() ){
-            Prodotto p=daAggiungereAiPreferiti.get();
-            if(p.getNascosto()==1){
-                throw new ProdottoNonPresenteNelDbExceptions();
-            }
-            if(p.getPreferito()==0){
-                p.setPreferito(1);
-                return "aggiunto";
-            }
-            else{
-                p.setPreferito(0);
-                return "rimosso";
-            }
-        }
-        throw new ProdottoNonPresenteNelDbExceptions();
-    }
+//    @Transactional(readOnly = false)
+//    public String aggiuntaAiPreferiti(int idProdotto) throws ProdottoNonPresenteNelDbExceptions {
+//        Optional<Prodotto> daAggiungereAiPreferiti=prodottoRepository.findById(idProdotto);
+//        if(daAggiungereAiPreferiti.isPresent() ){
+//            Prodotto p=daAggiungereAiPreferiti.get();
+//            if(p.getNascosto()==1){
+//                throw new ProdottoNonPresenteNelDbExceptions();
+//            }
+//            if(p.getPreferito()==0){
+//                p.setPreferito(1);
+//                return "aggiunto";
+//            }
+//            else{
+//                p.setPreferito(0);
+//                return "rimosso";
+//            }
+//        }
+//        throw new ProdottoNonPresenteNelDbExceptions();
+//    }
 
 
 }

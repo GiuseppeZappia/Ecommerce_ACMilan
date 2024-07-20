@@ -64,7 +64,7 @@ public class ProdottoController {
                                                     @RequestParam(required = false, defaultValue = "" + Double.MAX_VALUE) double maxPrezzo,
                                                     @RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
                                                     @RequestParam(value = "dimPagina", defaultValue = "20") int dimPagina) {
-       return this.ricercaAvanzata(minPrezzo,maxPrezzo,null,null,0,0,20,"prezzo");
+       return this.ricercaAvanzata(minPrezzo,maxPrezzo,null,null,0,numPagina,dimPagina,"prezzo");
 
     }
 
@@ -72,12 +72,33 @@ public class ProdottoController {
     //AGGIUNGO UNIQUE ANCHE SUL SINGOLO NOME E NON ANCHE CON CATEGORIA? PERCHE ALLA FINE NON AVRO DUE MAGLIE CON IDENTICO NOME
     public ResponseEntity getProdottoByNomeProdotto(@PathVariable String nomeProdotto) {
         try {
+            System.out.println("SONO STATO CHIAMATO, ALLA RICERCA DI "+nomeProdotto);
             Prodotto prodotto = prodottoService.trovaProdottoByNome(nomeProdotto);
-            if (prodotto == null)//CAMBIA QUI E METTI ECCEZONE MAGARI
+            System.out.println(prodotto);
+            if (prodotto == null)
                 throw new ProdottoNonValidoException();
             return new ResponseEntity<>(prodotto, HttpStatus.OK);
         }catch (ProdottoNonValidoException p){
             return new ResponseEntity<>(new ResponseMessage("NESSUN PRODOTTO CON QUESTO NOME"), HttpStatus.OK);
+        }
+    }
+
+    @PreAuthorize("hasRole('admin')")
+    @PostMapping
+    public ResponseEntity salvaProdotto(@RequestBody @Valid Prodotto prodotto) {
+        try{
+            prodottoService.salvaProdotto(prodotto);//RESTITUISCO PRODOTTO?????
+            return new ResponseEntity<>(new ResponseMessage("PRODOTTO SALVATO CON SUCCESSO"),HttpStatus.OK);
+        }catch (ProdottoGiaEsistenteException e){
+            return new ResponseEntity<>(new ResponseMessage("PRODOTTO GIA' ESISTENTE"), HttpStatus.BAD_REQUEST);
+        }catch (ProdottoNonValidoException e){
+            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO "), HttpStatus.BAD_REQUEST);
+        }catch(FasciaDiPrezzoNonValidaException e){
+            return new ResponseEntity<>(new ResponseMessage("FASCIA DI PREZZO NON VALIDA"), HttpStatus.BAD_REQUEST);
+        }catch (CategoriaNonValidaException e){
+            return new ResponseEntity<>(new ResponseMessage("CATEGORIA NON VALIDA"), HttpStatus.BAD_REQUEST);
+        }catch(Exception e){
+            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -106,25 +127,6 @@ public class ProdottoController {
 
     }
 
-    @PreAuthorize("hasRole('admin')")
-    @PostMapping
-    public ResponseEntity salvaProdotto(@RequestBody @Valid Prodotto prodotto) {
-        try{
-            prodottoService.salvaProdotto(prodotto);//RESTITUISCO PRODOTTO?????
-            return new ResponseEntity<>(new ResponseMessage("PRODOTTO SALVATO CON SUCCESSO"),HttpStatus.OK);
-        }catch (ProdottoGiaEsistenteException e){
-            return new ResponseEntity<>(new ResponseMessage("PRODOTTO GIA' ESISTENTE"), HttpStatus.BAD_REQUEST);
-        }catch (ProdottoNonValidoException e){
-            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO "), HttpStatus.BAD_REQUEST);
-        }catch(FasciaDiPrezzoNonValidaException e){
-            return new ResponseEntity<>(new ResponseMessage("FASCIA DI PREZZO NON VALIDA"), HttpStatus.BAD_REQUEST);
-        }catch (CategoriaNonValidaException e){
-            return new ResponseEntity<>(new ResponseMessage("CATEGORIA NON VALIDA"), HttpStatus.BAD_REQUEST);
-        }catch(Exception e){
-            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'AGGIUNTA'"), HttpStatus.BAD_REQUEST);
-        }
-    }
-
 
     @PreAuthorize("hasRole('admin')")
     @DeleteMapping("{idProdotto}")
@@ -139,39 +141,6 @@ public class ProdottoController {
             return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON ESISTENTE"), HttpStatus.BAD_REQUEST);
         }catch(Exception e){
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA RIMOZIONE"), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @PreAuthorize("hasRole('utente')")
-    @GetMapping("/preferiti")
-    public ResponseEntity getPreferiti(@RequestParam(value = "numPagina", defaultValue = "0") int numPagina,
-                                       @RequestParam(value = "dimPagina", defaultValue = "20") int dimPagina,
-                                       @RequestParam(value = "ordinamento", defaultValue = "prezzo") String ordinamento){
-        LinkedList<String> ordinamentoValido=new LinkedList<>();
-        ordinamentoValido.addAll(Arrays.asList("nome","categoria","descrizione","prezzo","quantita"));
-        if(numPagina<0 || dimPagina<=0 || !ordinamentoValido.contains(ordinamento)) {
-            return new ResponseEntity<>(new ResponseMessage("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI"), HttpStatus.BAD_REQUEST);
-        }
-
-        List<Prodotto> listaProdotti= prodottoService.getPreferiti(numPagina, dimPagina, ordinamento);
-        if (listaProdotti.isEmpty()) {
-            return new ResponseEntity<>(new ResponseMessage("LISTA PREFERITI VUOTA O NUMERO DI PAGINA NON VALIDO"), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(listaProdotti, HttpStatus.OK);
-    }
-
-    @PreAuthorize("hasRole('utente')")
-    @PostMapping("{idProdotto}")
-    public ResponseEntity aggiungiAiPreferiti(@PathVariable int  idProdotto) {
-        try {
-            String risultato=prodottoService.aggiuntaAiPreferiti(idProdotto);
-            if (risultato.equals("aggiunto"))
-                return new ResponseEntity<>(new ResponseMessage("PRODOTTO AGGIUNTO AI PREFERITI"), HttpStatus.OK);
-            return new ResponseEntity<>(new ResponseMessage("RIMOSSO DAI PREFERITI"), HttpStatus.BAD_REQUEST);
-        }catch(ProdottoNonPresenteNelDbExceptions e) {
-            return new ResponseEntity<>(new ResponseMessage("PRODOTTTO NON ESISTENTE "), HttpStatus.BAD_REQUEST);
-        }catch (Exception e){
-            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'OPERAZIONE "), HttpStatus.BAD_REQUEST);
         }
     }
 

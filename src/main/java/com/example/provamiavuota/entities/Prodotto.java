@@ -53,16 +53,12 @@ public class Prodotto {
     private int quantita;
 
     @Basic
-    @Column(name="immagine",nullable = true)
-    private int immagine;
-
-    @Basic
     @Column(name="hidden",length = 1)
     private int nascosto;
-
-    @Basic
-    @Column(name="preferito",length = 1)
-    private int preferito;
+//
+//    @Basic
+//    @Column(name="preferito",length = 1)
+//    private int preferito;
 
     @OneToMany(targetEntity = DettaglioOrdine.class, mappedBy="prodotto",cascade = CascadeType.MERGE)
     @JsonIgnore//cosi evito i cicli (guarda la cosa LAZY che diceva prof pure)

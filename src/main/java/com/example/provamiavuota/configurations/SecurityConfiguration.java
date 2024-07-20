@@ -11,6 +11,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 
 import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
 import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
@@ -41,20 +42,22 @@ public class SecurityConfiguration {
         return http.build();
     }
 
-    @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowCredentials(true);
-        configuration.addAllowedOrigin("*");
-        configuration.addAllowedHeader("*");
-        configuration.addAllowedMethod("OPTIONS");
-        configuration.addAllowedMethod("GET");
-        configuration.addAllowedMethod("POST");
-        configuration.addAllowedMethod("PUT");
-        source.registerCorsConfiguration("/**", configuration);
-        return new CorsFilter(source);
-    }
+
+@Bean
+public CorsFilter corsFilter() {
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowCredentials(true);
+    configuration.addAllowedOriginPattern("*");  // Permetti tutte le origini
+    configuration.addAllowedHeader("*");
+    configuration.addAllowedMethod("OPTIONS");
+    configuration.addAllowedMethod("GET");
+    configuration.addAllowedMethod("POST");
+    configuration.addAllowedMethod("PUT");
+    configuration.addAllowedMethod("DELETE");
+    source.registerCorsConfiguration("/**", configuration);
+    return new CorsFilter(source);
+}
 
 
 }

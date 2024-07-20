@@ -11,5 +11,6 @@ public interface DettaglioCarrelloRepository extends JpaRepository<DettaglioCarr
 
     boolean existsByCarrello_IdAndProdotto_Id(int idCarrello, int prodottoId);
     DettaglioCarrello findByCarrello_IdAndProdotto_Id(int idCarrello, int prodottoId);
+    boolean existsByCarrello_IdAndProdotto_IdAndQuantitaAndPrezzoUnitario(int idCarrello, int prodottoId,int quantita,double prezzoUnitario);
 
 }

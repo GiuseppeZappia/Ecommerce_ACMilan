@@ -125,4 +125,12 @@ public class PromozioneService {
     }
 
 
+    @Transactional(readOnly = true)
+    public boolean coinvolto(int idProdotto) throws ProdottoNonValidoException {
+        if(idProdotto<0 || !prodottoRepository.existsById(idProdotto)){
+            throw new ProdottoNonValidoException();
+        }
+        return prodottiPromoRepository.existsByProdottoAndAttiva(prodottoRepository.findById(idProdotto).get());
+    }
+
 }
