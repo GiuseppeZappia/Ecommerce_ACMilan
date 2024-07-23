@@ -14,42 +14,40 @@ class Constants {
   static final String REQUEST_LOGIN = "/realms/" + REALM + "/protocol/openid-connect/token";
   static final String REQUEST_LOGOUT = "/realms/" + REALM + "/protocol/openid-connect/logout";
 
-  // requests
-
   //CARRELLO
-  static final String REQUEST_VEDI_CARRELLO="/carrello";//aggiungere {idUtente}??
-  static final String REQUEST_AGGIUNGI_A_CARRELLO="/carrello/aggiungi";//aggiungere {idCarrello}/{idUtente}/{quantita}??
-  static final String REQUEST_ACQUISTA_CARRELLO = "/carrello/acquista";//aggiungere {idUtente}/{puntiUsati}??
+  static final String REQUEST_VEDI_CARRELLO="/carrello";
+  static final String REQUEST_AGGIUNGI_A_CARRELLO="/carrello/aggiungi";
+  static final String REQUEST_ACQUISTA_CARRELLO = "/carrello/acquista";
 
   //ORDINE
   static final String REQUEST_ELENCO_ORDINI = "/ordini/elencoOrdini";
   static final String REQUEST_INSERIMENTO_ORDINE = "/ordini/inserimento";
-  static final String REQUEST_ORDINI_NEL_PERIODO = "/ordini/elencoOrdini";//aggiungere {utente}/{DataInizio}/{DataFine}??
+  static final String REQUEST_ORDINI_NEL_PERIODO = "/ordini/elencoOrdini";
   static final String REQUEST_ORDINI_UTENTE = "/ordini/elencoOrdini/perUtente";
-  static final String REQUEST_RIMUOVI_ORDINE = "/ordini";//aggiungere {idOrdine}??
-  static final String REQUEST_ELENCO_DETTAGLIO_ORDINE = "/ordini/dettagliOrdine";//aggiungere {idOrdine}??
+  static final String REQUEST_RIMUOVI_ORDINE = "/ordini";
+  static final String REQUEST_ELENCO_DETTAGLIO_ORDINE = "/ordini/dettagliOrdine";
 
   //PRODOTTO
   static final String REQUEST_ELENCO_PRODOTTI = "/prodotti/elencoDisponibili";
   static final String REQUEST_ELENCO_PRODOTTI_PER_CATEGORIA = "/prodotti/percategoria";
   static final String REQUEST_ELENCO_PRODOTTI_PER_FASCIA_PREZZO = "/prodotti/perFasciaPrezzo";
-  static final String REQUEST_ELENCO_PRODOTTI_PER_NOME = "/prodotti/perNome";//aggiungere {nomeProdotto}??
+  static final String REQUEST_ELENCO_PRODOTTI_PER_NOME = "/prodotti/perNome";
   static final String REQUEST_ELENCO_PRODOTTI_RICERCA_AVANZATA = "/prodotti/ricercaAvanzata";
   static final String REQUEST_SALVA_PRODOTTO = "/prodotti";
-  static final String REQUEST_ELIMINA_PRODOTTO = "/prodotti";//aggiungere {idProdotto}??
+  static final String REQUEST_ELIMINA_PRODOTTO = "/prodotti";
   static final String REQUEST_GET_PREFERITI = "/preferiti";
-  static final String REQUEST_AGGIUNGI_A_PREFERITI = "/preferiti";//aggiungere {idProdotto}??
+  static final String REQUEST_AGGIUNGI_A_PREFERITI = "/preferiti";
 
   //PROMOZIONE
   static final String REQUEST_ELENCO_PROMOZIONI = "/promozioni/elenco";
-  static final String REQUEST_AGGIUNTA_PROD_A_PROMOZIONE = "/promozioni/aggiuntaApromo/";//aggiungere {idPromozione}/{idProdotto}/{percentualeSconto}??
+  static final String REQUEST_AGGIUNTA_PROD_A_PROMOZIONE = "/promozioni/aggiuntaApromo/";
   static final String REQUEST_CREA_NUOVA_PROMO = "/promozioni/creaNuova";
   static final String REQUEST_PRODOTTO_COINVOLTO_IN_PROMO="/promozioni/coinvolto";
 
   //REGISTRAZIONE/LOGIN
   static final String REQUEST_REGISTRAZIONE= "/utenti/registrazione";
   static final String REQUEST_LOGIN_BE="/utenti/login";
-  static final String REQUEST_LOGOUT_BE="/utenti/logout/";//aggiungere {refreshToken}??
+  static final String REQUEST_LOGOUT_BE="/utenti/logout/";
   static final String REQUEST_OTTIENI_USER="/utenti/trovaUtente";
 
   // states

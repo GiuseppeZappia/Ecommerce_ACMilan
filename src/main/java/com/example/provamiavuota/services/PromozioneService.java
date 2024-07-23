@@ -16,7 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.validation.constraints.Null;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -77,13 +76,12 @@ public class PromozioneService {
     }
 
 
-    //DEVO CONTROLLARE NON È CHE MI VIENE PASSATA CON ID GIA IMPOSTATO E QUINDI NON VALIDO PERHCE MAGARI SUS? STESSA COSA IN CASO PER ORDINI?
     @Transactional(readOnly = false,rollbackFor = {PromozioneNonPresenteException.class,PromozioneNonValida.class})
     public Promozione creaNuovaPromo(Promozione p) throws PromozioneNonValida, PromozioneGiaPresenteException, ProdottoNonPresenteNelDbExceptions, PromozioneNonPresenteException, PercentualeScontoNonValidaExceptions, PromozioneNonAttivaException, ProdottoGiaPresenteNellaPromozioneException {
         if(p==null){
             throw new PromozioneNonValida();
         }
-        //MI BASTA FARE QUESTI CONTROLLI PERCHE O ESISTE GIA CON QUELL'ID O AL MASSIMO CON IL NOME, POI NO LE CHAIVI SONO QUESTE
+        //MI BASTA FARE QUESTI CONTROLLI PERCHE O ESISTE GIA CON QUELL'ID O AL MASSIMO CON IL NOME, LE CHAIVI SONO QUESTE
         boolean esisteGia=(promozioneRepository.existsById(p.getId()) || promozioneRepository.existsByNomeAndAttiva(p.getNome(),1));
         if(esisteGia){
             throw new PromozioneGiaPresenteException();
@@ -96,7 +94,6 @@ public class PromozioneService {
             throw new PromozioneNonValida();
         }
         //SE NON HA PRODOTTI LA AGGIUNGO PERCHE MAGARI POI VENGONO SETTATI DOPO
-        // (A PROPOSITO FAI PROVA DI COSA SUCCEDE SE FAI ELENCO PRODOTTI DI UNA PROMO SENZA PRODOTTI DENTRO)
         if(p.getProdottiPromozione().isEmpty()){
            p.setAttiva(1);
            Promozione salvata=promozioneRepository.save(p);
@@ -119,7 +116,6 @@ public class PromozioneService {
                 prodPromo.setPromozione(p);
                 prodPromo.setProdotto(prodotto);
                 prodottiPromoRepository.save(prodPromo);
-                //CONTROLLA SE AL PRODOTTO CON LA PROVA COME IERI INSERISCE NELLA LISTA I PRODOTTI PROMO IN AUTOMATICO E SE CI SONO PROBLEMI CON QUELLA DELLA PROMO INVECE
         }
     return salvata;
     }

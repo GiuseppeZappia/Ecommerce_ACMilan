@@ -22,6 +22,8 @@ class _PromotionsPageState extends State<PromotionsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Promozioni Attive'),
+        backgroundColor: Colors.blueGrey.shade300,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
       ),
       body: FutureBuilder<List<Promozione>?>(
         future: _futurePromotions,
@@ -35,20 +37,33 @@ class _PromotionsPageState extends State<PromotionsPage> {
           } else {
             final promotions = snapshot.data!;
             return ListView.builder(
+              padding: EdgeInsets.all(8.0),
               itemCount: promotions.length,
               itemBuilder: (context, index) {
                 final promotion = promotions[index];
-                return ListTile(
-                  title: Text(promotion.nome),
-                  subtitle: Text(promotion.dettagli),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PromotionDetailsPage(promotion: promotion),
-                      ),
-                    );
-                  },
+                return Card(
+                  elevation: 5.0,
+                  margin: EdgeInsets.symmetric(vertical: 8.0),
+                  child: ListTile(
+                    contentPadding: EdgeInsets.all(16.0),
+                    leading: Icon(Icons.local_offer, size: 40.0, color: Colors.blueGrey),
+                    title: Text(
+                      promotion.nome,
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
+                    ),
+                    subtitle: Text(
+                      promotion.dettagli,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PromotionDetailsPage(promotion: promotion),
+                        ),
+                      );
+                    },
+                  ),
                 );
               },
             );

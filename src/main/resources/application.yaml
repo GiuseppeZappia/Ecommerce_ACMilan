@@ -6,7 +6,7 @@ spring:
           jwk-set-uri: http://localhost:8080/realms/Progetto_E-commerce/protocol/openid-connect/certs
           issuer-uri: http://localhost:8080/realms/Progetto_E-commerce
   application:
-    name: provamiavuota
+    name: ProgettoPSW_E-Commerce_Milan
   datasource:
     url: jdbc:mysql://localhost:3306/e_commerce_milan
     username: root
@@ -36,19 +36,13 @@ keycloak:
   principal-attribute: preferred_username
   clientId: admin-cli
 
-logging:
-  level:
-    org.springframework.security: DEBUG
-
+#logging:
+#  level:
+#    org.springframework.security: DEBUG
 
 server:
   port: 9090
 
-
-
-
-
-
 variabili:
   minimoPuntiUsabili: 100
-  listaStringhe: Tazze,PortaChiavi,Palloni,Cinture,Bracciali,Sciarpe,Berretti,Cappelli,Profumi uomo,Profumi donna,Spille
+  listaStringhe: Tazze,PortaChiavi,Palloni,Bracciali,Sciarpe,Berretti,Cappelli,Gemelli

@@ -5,6 +5,7 @@ import 'package:frontend/UI/ProductDetailsPage.dart';
 import 'package:frontend/model/managers/RestManager.dart';
 
 import '../model/objects/Utente.dart';
+import 'HomePage.dart';
 
 class ProductsPage extends StatefulWidget {
   @override
@@ -14,21 +15,26 @@ class ProductsPage extends StatefulWidget {
 class _ProductsPageState extends State<ProductsPage> {
   List<Prodotto>? _products;
   bool _isLoading = true;
-  RestManager _restManager = RestManager();
   TextEditingController _searchController = TextEditingController();
   TextEditingController _minPriceController = TextEditingController();
   TextEditingController _maxPriceController = TextEditingController();
   String _selectedCategory = 'Qualunque';
-  String _selectedSortCriteria = 'prezzo';  // Default sort criteria
-  Map<int, int> _quantities = {};  // Map to keep track of product quantities
+  String _selectedSortCriteria = 'prezzo';
+  Map<int, int> _quantities = {};
 
   Map<String, String> categoryImageMap = {
     'Tazze': 'assets/images/tazza2.webp',
     'Portachiavi': 'assets/images/portachiavi.jpg',
+    'Palloni': 'assets/images/pallone.webp',
+    'Bracciali': 'assets/images/bracciale.webp',
+    'Sciarpe': 'assets/images/sciarpa.webp',
+    'Berretti': 'assets/images/berretto.webp',
+    'Cappelli': 'assets/images/cappello.webp',
+    'Gemelli': 'assets/images/gemelli.webp'
   };
 
-  List<String> categories = ['Qualunque', 'Tazze', 'Portachiavi', "Palloni", "Bracciali", "Cinture", "Sciarpe"];
-  List<String> sortCriteria = ['nome', 'categoria', 'prezzo', 'quantita'];
+  List<String> categories = ['Qualunque','Tazze','PortaChiavi','Palloni','Bracciali','Sciarpe','Berretti','Cappelli','Gemelli'];
+  List<String> sortCriteria = ['nome', 'categoria', 'prezzo'];
 
   @override
   void initState() {
@@ -60,7 +66,11 @@ class _ProductsPageState extends State<ProductsPage> {
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
-                },
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomePage(selectedIndex: 4,)),
+                  );
+                  },
                 child: Text("OK"),
               ),
             ],
@@ -68,10 +78,26 @@ class _ProductsPageState extends State<ProductsPage> {
         );
       } else {
         int quantity = _quantities[productId] ?? 1;
-        await Model.sharedInstance.aggiungiAcarrello(loggedUser.id, productId, quantity);
+        var risposta=await Model.sharedInstance.aggiungiAcarrello(loggedUser.id, productId, quantity);
+        if(risposta==null){
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text("Quantità non disponibile"),
+              content: Text("Quantità non disponibile attualmente in magazzino."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } catch (e) {
-      print(e);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Errore nell\'aggiunta al carrello')));
     }
   }
@@ -101,6 +127,10 @@ class _ProductsPageState extends State<ProductsPage> {
     double minPrice = _minPriceController.text.isEmpty ? 1 : double.parse(_minPriceController.text);
     double maxPrice = _maxPriceController.text.isEmpty ? double.maxFinite : double.parse(_maxPriceController.text);
 
+    if(_minPriceController.text=="0"){
+      minPrice=1;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -128,203 +158,14 @@ class _ProductsPageState extends State<ProductsPage> {
     _fetchProducts();
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: AppBar(
-  //       title: Text('Prodotti'),
-  //       bottom: PreferredSize(
-  //         preferredSize: Size.fromHeight(96.0),
-  //         child: Padding(
-  //           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-  //           child: Column(
-  //             children: [
-  //               Row(
-  //                 children: [
-  //                   Expanded(
-  //                     child: TextField(
-  //                       controller: _searchController,
-  //                       decoration: InputDecoration(
-  //                         hintText: 'Cerca prodotti...',
-  //                         suffixIcon: IconButton(
-  //                           icon: Icon(Icons.search),
-  //                           onPressed: () => _searchProducts(_searchController.text),
-  //                         ),
-  //                       ),
-  //                       onSubmitted: _searchProducts,
-  //                     ),
-  //                   ),
-  //                   SizedBox(width: 8.0),
-  //                   DropdownButton<String>(
-  //                     value: _selectedCategory,
-  //                     items: categories.map((String category) {
-  //                       return DropdownMenuItem<String>(
-  //                         value: category,
-  //                         child: Text(category),
-  //                       );
-  //                     }).toList(),
-  //                     onChanged: _onCategoryChanged,
-  //                   ),
-  //                   SizedBox(width: 8.0),
-  //                   DropdownButton<String>(
-  //                     value: _selectedSortCriteria,
-  //                     items: sortCriteria.map((String criteria) {
-  //                       return DropdownMenuItem<String>(
-  //                         value: criteria,
-  //                         child: Text(criteria),
-  //                       );
-  //                     }).toList(),
-  //                     onChanged: _onSortCriteriaChanged,
-  //                   ),
-  //                 ],
-  //               ),
-  //               Row(
-  //                 children: [
-  //                   Expanded(
-  //                     child: TextField(
-  //                       controller: _minPriceController,
-  //                       decoration: InputDecoration(
-  //                         hintText: 'Prezzo minimo',
-  //                       ),
-  //                       keyboardType: TextInputType.number,
-  //                     ),
-  //                   ),
-  //                   SizedBox(width: 8.0),
-  //                   Expanded(
-  //                     child: TextField(
-  //                       controller: _maxPriceController,
-  //                       decoration: InputDecoration(
-  //                         hintText: 'Prezzo massimo',
-  //                       ),
-  //                       keyboardType: TextInputType.number,
-  //                     ),
-  //                   ),
-  //                   IconButton(
-  //                     icon: Icon(Icons.search),
-  //                     onPressed: _searchProductsByPriceRange,
-  //                   ),
-  //                 ],
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //     body: _isLoading
-  //         ? Center(child: CircularProgressIndicator())
-  //         : _products == null || _products!.isEmpty
-  //         ? Center(child: Text('NESSUN PRODOTTO CON QUESTE CARATTERISTICHE'))
-  //         : LayoutBuilder(
-  //       builder: (context, constraints) {
-  //         int crossAxisCount = 2;
-  //         if (constraints.maxWidth > 750 && constraints.maxWidth <= 990) {
-  //           crossAxisCount = 3;
-  //         } else if (constraints.maxWidth > 990 && constraints.maxWidth < 1300) {
-  //           crossAxisCount = 4;
-  //         } else if (constraints.maxWidth >= 1300) {
-  //           crossAxisCount = 5;
-  //         }
-  //
-  //         return Padding(
-  //           padding: const EdgeInsets.all(8.0),
-  //           child: GridView.builder(
-  //             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-  //               crossAxisCount: crossAxisCount,
-  //               childAspectRatio: 0.8,
-  //               mainAxisSpacing: 16.0,
-  //               crossAxisSpacing: 16.0,
-  //             ),
-  //             itemCount: _products?.length ?? 0,
-  //             itemBuilder: (context, index) {
-  //               final product = _products![index];
-  //               final imagePath = categoryImageMap[product.categoria] ?? 'assets/images/default.jpg';
-  //               int quantity = _quantities[product.id] ?? 1;
-  //
-  //               return GestureDetector(
-  //                 onTap: () => _showProductDetails(product),
-  //                 child: Card(
-  //                   margin: EdgeInsets.all(4.0),
-  //                   child: Column(
-  //                     mainAxisSize: MainAxisSize.min,
-  //                     crossAxisAlignment: CrossAxisAlignment.start,
-  //                     children: <Widget>[
-  //                       AspectRatio(
-  //                         aspectRatio: 1.0,
-  //                         child: Image.asset(
-  //                           imagePath,
-  //                           fit: BoxFit.cover,
-  //                         ),
-  //                       ),
-  //                       Padding(
-  //                         padding: const EdgeInsets.all(8.0),
-  //                         child: Row(
-  //                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //                           children: [
-  //                             Expanded(
-  //                               child: Column(
-  //                                 crossAxisAlignment: CrossAxisAlignment.start,
-  //                                 children: [
-  //                                   Text(
-  //                                     product.nome,
-  //                                     style: TextStyle(fontSize: 14),
-  //                                     maxLines: 1,
-  //                                     overflow: TextOverflow.ellipsis,
-  //                                   ),
-  //                                   Text(
-  //                                     '€${product.prezzo.toStringAsFixed(2)}',
-  //                                     style: TextStyle(fontSize: 12),
-  //                                   ),
-  //                                 ],
-  //                               ),
-  //                             ),
-  //                             Row(
-  //                               children: [
-  //                                 IconButton(
-  //                                   icon: Icon(Icons.remove,color:Colors.red),
-  //                                   onPressed: () {
-  //                                     setState(() {
-  //                                       if (quantity > 1) {
-  //                                         quantity--;
-  //                                         _quantities[product.id] = quantity;
-  //                                       }
-  //                                     });
-  //                                   },
-  //                                 ),
-  //                                 Text(quantity.toString(), style: TextStyle(fontSize: 16.0)),
-  //                                 IconButton(
-  //                                   icon: Icon(Icons.add,color:Colors.green),
-  //                                   onPressed: () {
-  //                                     setState(() {
-  //                                       quantity++;
-  //                                       _quantities[product.id] = quantity;
-  //                                     });
-  //                                   },
-  //                                 ),
-  //                               ],
-  //                             ),
-  //                             IconButton(
-  //                               icon: Icon(Icons.add_shopping_cart,color: Colors.blue),
-  //                               onPressed: () => _addToCart(product.id),
-  //                             ),
-  //                           ],
-  //                         ),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               );
-  //             },
-  //           ),
-  //         );
-  //       },
-  //     ),
-  //   );
-  // }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Prodotti'),
+        backgroundColor: Colors.blueGrey.shade100,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.0)),
+        elevation: 5,
+        title: Text('Prodotti',style: TextStyle(color: Colors.black)),
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(120.0),
           child: Padding(
@@ -351,7 +192,7 @@ class _ProductsPageState extends State<ProductsPage> {
                     ),
                     SizedBox(width: 8.0),
                     Container(
-                      width: 130.0,
+                      width: 140.0,
                       child: DropdownButtonFormField<String>(
                         value: _selectedCategory,
                         items: categories.map((String category) {
@@ -422,7 +263,7 @@ class _ProductsPageState extends State<ProductsPage> {
                     SizedBox(width: 8.0),
                     ElevatedButton(
                       onPressed: _searchProductsByPriceRange,
-                      child: Text('Filtra'),
+                      child: Text('Filtra',style: TextStyle(color: Colors.black),),
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
                         shape: RoundedRectangleBorder(
@@ -464,13 +305,17 @@ class _ProductsPageState extends State<ProductsPage> {
               itemCount: _products?.length ?? 0,
               itemBuilder: (context, index) {
                 final product = _products![index];
-                final imagePath = categoryImageMap[product.categoria] ?? 'assets/images/default.jpg';
+                final imagePath = categoryImageMap[product.categoria] ?? 'assets/images/default.png';
                 int quantity = _quantities[product.id] ?? 1;
 
                 return GestureDetector(
                   onTap: () => _showProductDetails(product),
                   child: Card(
                     margin: EdgeInsets.all(4.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                      side: BorderSide(color: Colors.grey,width: 1.0)
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -35,7 +35,8 @@ public class DettaglioOrdine {
     @ManyToOne
     @JoinColumn(name="id_ordine")
     @JsonIgnore
-    //perche a me interessa che nell'ordine si vedano i dettagli, mica vedere per ogni dettaglio lo stesso ordine e per evitare cicli al solito???
+    //perche a me interessa che nell'ordine si vedano i dettagli,
+    // mica vedere per ogni dettaglio lo stesso ordine e per evitare cicli
     @ToString.Exclude
     private Ordine ordine;
 

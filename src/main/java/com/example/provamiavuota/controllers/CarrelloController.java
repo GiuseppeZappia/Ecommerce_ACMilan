@@ -37,26 +37,32 @@ public class CarrelloController {
             LinkedList<String> ordinamentoValido = new LinkedList<>();
             ordinamentoValido.addAll(Arrays.asList("quantita", "prezzounitario"));
             if (numPagina < 0 || dimPagina <= 0 || !ordinamentoValido.contains(ordinamento)) {
+                System.out.println("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI");
                 return new ResponseEntity<>(new ResponseMessage("PAGINAZIONE NON VALIDA PER I PARAMETRI PASSATI"), HttpStatus.BAD_REQUEST);
             }
             List<DettaglioCarrello> listaItem = carrelloService.mostraTutti(numPagina, dimPagina, ordinamento, idUtente);
             if (listaItem.isEmpty()) {
+                System.out.println("NESSUN RISULTATO O NUMERO DI PAGINA NON VALIDO");
                 return new ResponseEntity<>(new ResponseMessage("NESSUN RISULTATO O NUMERO DI PAGINA NON VALIDO"), HttpStatus.OK);
             }
             return new ResponseEntity<>(listaItem, HttpStatus.OK);
         } catch (UtenteNonEsistenteONonValido e) {
+            System.out.println("UTENTE NON ESISTENTE O NON VALIDO");
             return new ResponseEntity<>(new ResponseMessage("UTENTE NON ESISTENTE O NON VALIDO"), HttpStatus.OK);
         } catch (CarrelloNonValidoException e) {
+            System.out.println("CARRELLO NON VALIDO");
             return new ResponseEntity<>(new ResponseMessage("CARRELLO NON VALIDO"), HttpStatus.OK);
         } catch (TentativoNonAutorizzato e) {
+            System.out.println("TENTATIVO NON AUTORIZZATO");
             return new ResponseEntity<>(new ResponseMessage("TENTATIVO NON AUTORIZZATO"), HttpStatus.OK);
         } catch (Exception e) {
+            System.out.println("ERRORE NELLA RICHIESTA");
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA RICHIESTA"), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PreAuthorize("hasRole('utente')")
-    //EVENTUALMENTE INSERISCO IN UN DTO CHE RICEVO NEL BODY?
+    //EVENTUALMENTE INSERISCO IN UN DTO CHE RICEVO NEL BODY COME FACCIO PER ACQUISTO
     @PostMapping("/aggiungi/{idUtente}/{idProdotto}/{quantita}")
     public ResponseEntity aggiungiProdottoAcarrello(@PathVariable int idUtente, @PathVariable int idProdotto, @PathVariable int quantita) {
         try {
@@ -69,51 +75,20 @@ public class CarrelloController {
             System.out.println("CARRELLO NON VALIDO");
             return new ResponseEntity<>(new ResponseMessage("CARRELLO NON VALIDO"), HttpStatus.BAD_REQUEST);
         } catch (ProdottoNonValidoException e) {
+            System.out.println("PRODOTTO NON VALIDO");
             return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO"), HttpStatus.BAD_REQUEST);
         } catch (QuantitaProdottoNonDisponibile e) {
+            System.out.println("QUANTITA' NON VALIDA");
             return new ResponseEntity<>(new ResponseMessage("QUANTITA NON VALIDA"), HttpStatus.BAD_REQUEST);
         } catch (TentativoNonAutorizzato e) {
             System.out.println("TENTATIVO NON AUTORIZZATO");
             return new ResponseEntity<>(new ResponseMessage("TENTATIVO NON AUTORIZZATO"), HttpStatus.OK);
         } catch (Exception e) {
+            System.out.println("ERRORE NELLA RICHIESTA");
             return new ResponseEntity<>(new ResponseMessage("ERRORE NELLA RICHIESTA"), HttpStatus.BAD_REQUEST);
         }
     }
 
-//    @PreAuthorize("hasRole('utente')")
-//    @PostMapping("/acquista/{idUtente}/{puntiUsati}")
-//    public ResponseEntity acquista(@PathVariable int idUtente,@PathVariable int puntiUsati) {
-//        try {
-//            if (idUtente < 0) {
-//                throw new UtenteNonEsistenteONonValido();
-//            }
-//            if (puntiUsati < 0) {
-//                throw new OrdineNonValido();
-//            }
-//            Ordine ordine = carrelloService.acquista(idUtente, puntiUsati);
-//            return new ResponseEntity<>(ordine, HttpStatus.OK);
-//        }catch (ProdottoNonValidoException e){
-//            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON VALIDO"), HttpStatus.BAD_REQUEST);
-//        }catch(OrdineNonValido e){
-//            return new ResponseEntity<>(new ResponseMessage("ORDINE O PUNTI NON VALIDI"), HttpStatus.BAD_REQUEST);
-//        }catch(CarrelloNonValidoException e){
-//            return new ResponseEntity<>(new ResponseMessage("CARRELLO NON VALIDO"), HttpStatus.BAD_REQUEST);
-//        }catch (UtenteNonEsistenteONonValido e){
-//            return new ResponseEntity<>(new ResponseMessage("UTENTE NON VALIDO"), HttpStatus.BAD_REQUEST);
-//        } catch (QuantitaProdottoNonDisponibile e) {
-//            return new ResponseEntity<>(new ResponseMessage("QUANTITA NON VALIDA"), HttpStatus.BAD_REQUEST);
-//        } catch (MinimoPuntiRichiestoNonSoddisfatto e) {
-//            return new ResponseEntity<>(new ResponseMessage("MINIMO PUNTI NON SODDISFATTO"), HttpStatus.BAD_REQUEST);
-//        } catch (ProdottoNonDisponibileAlMomento e) {
-//            return new ResponseEntity<>(new ResponseMessage("PRODOTTO NON DISPONIBILE"), HttpStatus.BAD_REQUEST);
-//        } catch (PuntiFedeltaNonDisponibili e) {
-//            return new ResponseEntity<>(new ResponseMessage("PUNTI NON DISPONIBILI"), HttpStatus.BAD_REQUEST);
-//        }catch (TentativoNonAutorizzato e){
-//            return new ResponseEntity<>(new ResponseMessage("TENTATIVO NON AUTORIZZATO"), HttpStatus.BAD_REQUEST);
-//        }catch (Exception e) {
-//            return new ResponseEntity<>(new ResponseMessage("ERRORE NELL'ACQUISTO"), HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
 
     @PreAuthorize("hasRole('utente')")
     @PostMapping("/acquista/{puntiUsati}")

@@ -26,7 +26,6 @@ public class Ordine {
 
     @Basic
     @CreationTimestamp
-    //@Temporal(TemporalType.TIMESTAMP)
     @Column(name="data")
     private Date data;
 
@@ -42,7 +41,6 @@ public class Ordine {
     @JoinColumn(name = "id_utente")
     private Utente utente;
 
-    //RIMETTI A MERGE SE FAI LA DELETE DELL'ORDINE DIVERSAMENTE
     @OneToMany(mappedBy = "ordine",cascade = CascadeType.MERGE)
     private List<DettaglioOrdine> listaDettagliOrdine;
 

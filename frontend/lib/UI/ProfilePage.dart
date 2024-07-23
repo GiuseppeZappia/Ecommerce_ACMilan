@@ -31,7 +31,9 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
         title: Text('Profilo Utente'),
+        backgroundColor: Colors.blueGrey.shade300,
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -43,26 +45,52 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildUserProfile() {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(50.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Nome: ${_loggedUser!.nome}', style: TextStyle(fontSize: 18)),
-          SizedBox(height: 8),
-          Text('Cognome: ${_loggedUser!.cognome}', style: TextStyle(fontSize: 18)),
-          SizedBox(height: 8),
-          Text('Email: ${_loggedUser!.email}', style: TextStyle(fontSize: 18)),
-          SizedBox(height: 8),
-          Text('Punti Fedeltà: ${_loggedUser!.puntifedelta}', style: TextStyle(fontSize: 18)),
+          _buildProfileDetail('Nome', _loggedUser!.nome),
+          _buildProfileDetail('Cognome', _loggedUser!.cognome),
+          _buildProfileDetail('Email', _loggedUser!.email),
+          _buildProfileDetail('Punti Fedeltà', _loggedUser!.puntifedelta.toString()),
           SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () async {
-              await Model.sharedInstance.logOut();
-              setState(() {
-                _loggedUser = null;
-              });
-            },
-            child: Text('Logout'),
+          Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                await Model.sharedInstance.logOut();
+                setState(() {
+                  _loggedUser = null;
+                });
+              },
+              child: Text('Logout',style: TextStyle(color: Colors.black)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, // Button color
+                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetail(String title, String detail) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$title:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              detail,
+              style: TextStyle(fontSize: 18),
+            ),
           ),
         ],
       ),
@@ -75,86 +103,134 @@ class _ProfilePageState extends State<ProfilePage> {
     TextEditingController passwordController = TextEditingController();
 
     return Center(
-      child: Padding(
-      padding: const EdgeInsets.only(top:50.0),//const EdgeInsets.all(16.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: Card(
+          elevation: 5,
+          child: Padding(
+            padding: const EdgeInsets.all(50.0),
+            child:
+            SizedBox(width: 350,
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Login',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold,color: Colors.black),
+                ),
+                SizedBox(height: 20),
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTextFormField(
+                        controller: emailController,
+                        label: 'Email o username',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Inserisci una email';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 12),
+                      _buildTextFormField(
+                        controller: passwordController,
+                        label: 'Password',
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Inserisci una password';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            var result = await Model.sharedInstance.logIn(
+                              emailController.text,
+                              passwordController.text,
+                            );
+                            if (result == LogInResult.logged) {
+                              _checkLoggedUser();
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text("Errore nel login "),
+                                  content: Text("Credenziali errate o non valide. Riprova."),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      child: Text("OK"),
+                                    ),
+                                  ],
+                                ),
+                              );
 
-      child:SizedBox(
-        width: 300,
-        child:
-        Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextFormField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Inserisci una email';
-                }
-                return null;
-              },
-
-            ),
-            SizedBox(height: 8),
-            TextFormField(
-              controller: passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Inserisci una password';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  var result = await Model.sharedInstance.logIn(
-                    emailController.text,
-                    passwordController.text,
-                  );
-                  if (result == LogInResult.logged) {
-                    _checkLoggedUser();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Credenziali errate o altro errore')),
-                    );
-                  }
-                }
-              },
-              child: Text('Login'),
-            ),
-            SizedBox(height: 8),
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => RegistrationPage()),
-                  );
-                },
-                child: Text(
-                  'Non sei registrato? Registrati',
-                  style: TextStyle(
-                    color: Colors.deepPurple,
-                    decoration: TextDecoration.underline,
+                            }
+                          }
+                        },
+                        child: Text('Login',style: TextStyle(color: Colors.black)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueGrey.shade300,
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => RegistrationPage()),
+                          );
+                        },
+                        child: Text(
+                          'Non sei registrato? Registrati',
+                          style: TextStyle(
+                            color: Colors.blueGrey,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
+        ),),
+    );
+  }
+
+  Widget _buildTextFormField({
+    required TextEditingController controller,
+    required String label,
+    bool obscureText = false,
+    required String? Function(String?) validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 50, vertical: 12),
         ),
-      ),
+        obscureText: obscureText,
+        validator: validator,
       ),
     );
   }
 }
-
 
 class RegistrationPage extends StatefulWidget {
   @override
@@ -173,105 +249,164 @@ class _RegistrationPageState extends State<RegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Registrazione'),
+        title: Text('Registrazione',style: TextStyle(color: Colors.black)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+        backgroundColor: Colors.blueGrey.shade300,
       ),
       body: Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top:50.0),
-        child:SizedBox(
-        width: 300,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Username'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci un username';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Email'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci una email';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _firstNameController,
-                decoration: InputDecoration(labelText: 'Nome'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci il tuo nome';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _lastNameController,
-                decoration: InputDecoration(labelText: 'Cognome'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci il tuo cognome';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 8),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Inserisci una password';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    UtenteRegistrDTO user = UtenteRegistrDTO(
-                      id: 0, // ID will be assigned by the backend
-                      username: _usernameController.text,
-                      email: _emailController.text,
-                      firstName: _firstNameController.text,
-                      lastName: _lastNameController.text,
-                      password: _passwordController.text,
-                    );
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 50.0),
+          child: Card(
+            elevation: 5,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child:SizedBox(
+    width: 350,
+    child:
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Registrazione',
+                    style: TextStyle(fontSize: 24,color: Colors.black),
+                  ),
+                  SizedBox(height: 20),
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTextFormField(
+                          controller: _usernameController,
+                          label: 'Username',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Inserisci un username';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 12),
+                        _buildTextFormField(
+                          controller: _emailController,
+                          label: 'Email',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Inserisci una email';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 12),
+                        _buildTextFormField(
+                          controller: _firstNameController,
+                          label: 'Nome',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Inserisci il tuo nome';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 12),
+                        _buildTextFormField(
+                          controller: _lastNameController,
+                          label: 'Cognome',
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Inserisci il tuo cognome';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 12),
+                        _buildTextFormField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Inserisci una password';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (_formKey.currentState!.validate()) {
+                              UtenteRegistrDTO user = UtenteRegistrDTO(
+                                id: 0,
+                                username: _usernameController.text,
+                                email: _emailController.text,
+                                firstName: _firstNameController.text,
+                                lastName: _lastNameController.text,
+                                password: _passwordController.text,
+                              );
 
-                    Utente? result = await Model.sharedInstance.addUser(user);
+                              Utente? result = await Model.sharedInstance.addUser(user);
 
-                    if (result != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Registrazione riuscita!')),
-                      );
-                      Navigator.pop(context); // Ritorna alla pagina di login
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Registrazione fallita. Email o username già esistenti.')),
-                      );
-                    }
-                  }
-                },
-                child: Text('Registrati'),
+                              if (result != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Registrazione riuscita!')),
+                                );
+                                Navigator.pop(context); // Ritorna alla pagina di login
+                              } else {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text("Errore nella registrazione "),
+                                    content: Text("Dati errati o non validi. Riprova."),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        child: Text("OK"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: Text('Registrati',style: TextStyle(color: Colors.black)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueGrey.shade300,
+                            padding: EdgeInsets.symmetric(vertical: 15),
+                            textStyle: TextStyle(fontSize: 16,color: Colors.black),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),),
-      ),);
+        ),),
+    );
+  }
+
+  Widget _buildTextFormField({
+    required TextEditingController controller,
+    required String label,
+    bool obscureText = false,
+    required String? Function(String?) validator,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+          contentPadding: EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+        ),
+        obscureText: obscureText,
+        validator: validator,
+      ),
+    );
   }
 }

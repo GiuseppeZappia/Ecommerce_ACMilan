@@ -1,4 +1,4 @@
-import 'package:frontend/model/DTO/DettaglioDto.dart';
+ import 'package:frontend/model/DTO/DettaglioDto.dart';
 
 class CarrelloDto {
   List<DettaglioDto> listaDettagli;

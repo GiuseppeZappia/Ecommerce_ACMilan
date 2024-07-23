@@ -6,9 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.annotations.CreationTimestamp;
 
-import java.util.Date;
 import java.util.List;
 
 @Getter
@@ -35,7 +33,6 @@ public class Carrello {
     @Column(name="attivo",length=1)
     private int attivo;
 
-    //RIMETTI A MERGE SE FAI LA DELETE DELL'ORDINE DIVERSAMENTE
     @OneToMany(mappedBy = "carrello",cascade = CascadeType.MERGE)
     private List<DettaglioCarrello> listaDettagliCarrello;
 

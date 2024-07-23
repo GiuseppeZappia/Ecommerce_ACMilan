@@ -4,7 +4,6 @@ import com.example.provamiavuota.authentication.Utils;
 import com.example.provamiavuota.entities.*;
 import com.example.provamiavuota.repositories.*;
 import com.example.provamiavuota.supports.exceptions.*;
-import jdk.jshell.execution.Util;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,15 +47,13 @@ public class OrdineService {
     }
 
 
-    //QUINDI LA SAVE LA FACCIO SOLO DELLE ENTITY CHE NON PRENDO DAL DB MA CHE CREO IO O RICEVO DA FE, NEGLI ALTRI CASI INVECE
-    //NON FACCIO LA SAVE PERCHE SONO GESTITE IN AUTOMATICO
-    //CON IL ROLLBACKFOR GESTISCO LE ECCEZIONI CHE QUESTO METODO LANCIA GARANTENDO CHE VENGANO EFFETTUATE LE ROLLBACK LASCIANDO IL DB CONSISTENTE
     @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class})
     public Ordine salvaOrdine(@NotNull Ordine ordine) throws QuantitaProdottoNonDisponibile, OrdineNonValido, PuntiFedeltaNonDisponibili, UtenteNonEsistenteONonValido, MinimoPuntiRichiestoNonSoddisfatto {
         boolean applicataPromozione = false;
-        double totaleOrdineRicevuto= ordine.getTotale();
-        System.out.println("APPENA RICEVUTO "+ordine.getTotale());
+
         //serve per aggiunta punti ad utente che dipende se c'erano prod in promo nell'ordine o meno
+        double totaleOrdineRicevuto= ordine.getTotale();
+
         Ordine ordineSalvato=ordineRepository.save(ordine);
         //QUI CONTROLLO che l'ordine contenga qualche prodotto
         if(ordineSalvato.getListaDettagliOrdine().isEmpty()){
@@ -70,10 +67,9 @@ public class OrdineService {
             //CONTROLLO CH ESISTA PRODOTTO, CHE QUANTITA SIANO VALIDE E CHE PREZZO PASSATOMI CORRISPONDA A QUELLO EFFETTIOVO PER QUEL PRODOTTO
             if (prodottoDaAcquistare == null || d.getQuantita()<=0 || d.getPrezzoUnitario()==null ||
                     d.getPrezzoUnitario()<=0|| !d.getPrezzoUnitario().equals(prodottoDaAcquistare.getPrezzo())){
-                //controllo per verificare se i dettagli ordine sono ok, vanno fatti? se si, qui?
-                System.out.println("IN ORDINE ERRORE MIO 1");
                 throw new OrdineNonValido();
             }
+
             if (prodottoDaAcquistare.getQuantita() < d.getQuantita())
                 throw new QuantitaProdottoNonDisponibile();
 
@@ -86,36 +82,38 @@ public class OrdineService {
 
             boolean prodottoInPromozione=prodPromoRepository.existsByProdottoAndAttiva(prodottoDaAcquistare);
             //verifico se quel prodotto è parte di qualche promo
-
             if (prodottoInPromozione){//se esiste almeno una promozione...
-                applicataPromozione=true;//in modo tale da non dare i punti alla tessera dell'utente
-                ProdottiPromo prodPromoConScontoMax=prodPromoRepository.findPromozioneWithMaxScontoByProdotto(prodottoDaAcquistare);
-                int percentualeScontoMax=prodPromoConScontoMax.getSconto();
+                applicataPromozione=true;//in modo tale da non dare i punti alla tessera dell'utente alla fine
+                List<ProdottiPromo> prodPromoConScontoMax=prodPromoRepository.findPromozioneWithMaxScontoByProdotto(prodottoDaAcquistare);
+                int percentualeScontoMax=prodPromoConScontoMax.get(0).getSconto();//col get(0) prendo la prima promozione ricevuta che coinvolge mio prodotto,
+                                                                                  // ovvero la piu conveniente perche ordinate DECR da query
                 double sconto= (((double) percentualeScontoMax/100) * prodottoDaAcquistare.getPrezzo());
 
                 //aggiorno il prezzo sia per l'ordine che per il dettaglio ordine
                 d.setPrezzoUnitario(prodottoDaAcquistare.getPrezzo()-sconto);
                 ordineSalvato.setTotale(ordineSalvato.getTotale()-sconto*d.getQuantita()); //detraggo sconto moltiplicato per quantita acquistata
             }
-            DettaglioOrdine salvatoDef=dettaglioOrdineRepository.save(d);
+            dettaglioOrdineRepository.save(d);
         }
 
         //PREZZO NON È QUELLO CHE DOVREBBE ESSERE
         if(totaleOrdineRicevuto!=totalePrevistoSenzaSconti){
             throw new OrdineNonValido();
         }
-        //qua ha senso lasciare solo la findByid? perche se mi viene passato un id valido ma gli altri campi no come faccio? (in questo caso controllo come sotto)
+
         int idUtenteOrdine=ordineSalvato.getUtente().getId();
         Optional<Utente> utente = utenteRepository.findById(idUtenteOrdine);
-        if (utente.isEmpty() || !utentePresenteNelDb(ordineSalvato.getUtente())) {//controllo innanzitutto se esiste con quell'id e poi se gli altri campi presenti nell'ordine sono validi
+        //controllo innanzitutto se esiste con quell'id e poi se gli altri campi presenti nell'ordine sono validi
+        if (utente.isEmpty() || !utentePresenteNelDb(ordineSalvato.getUtente())) {
             throw new UtenteNonEsistenteONonValido();
         }
         Utente u = utente.get();
         if ((applicataPromozione && ordineSalvato.getPuntiusati()!=0) || ordineSalvato.getPuntiusati() < 0 || ordineSalvato.getPuntiusati() > u.getPuntifedelta())//punti non utilizzabili con prodotti in promo VENGONO PASSATI PIU PUNTI DI QUANTI NE ABBIA L'UTENTE OPPURE UN NUMERO NEGATIVO
             throw new PuntiFedeltaNonDisponibili();
-        if (ordineSalvato.getPuntiusati() !=0 && ordineSalvato.getPuntiusati() < minimoPuntiUsabili)//se non usa 0 punti e non soddisfa il minimo richiesto lancio eccezione
+        //se non usa 0 punti e non soddisfa il minimo richiesto lancio eccezione
+        if (ordineSalvato.getPuntiusati() !=0 && ordineSalvato.getPuntiusati() < minimoPuntiUsabili)
             throw new MinimoPuntiRichiestoNonSoddisfatto();
-        int maxScontoPossibileDatiPunti = ordineSalvato.getPuntiusati() / 2;
+        int maxScontoPossibileDatiPunti = (int) Math.floor(ordineSalvato.getPuntiusati() / 2);
         if (maxScontoPossibileDatiPunti > ordineSalvato.getTotale()) {//i punti coprono una cifra maggiore rispetto l'ordine
             int puntiUsati = (int) Math.ceil(ordineSalvato.getTotale() * 2);
             ordineSalvato.setPuntiusati(puntiUsati);//aggiorno i punti usati per l'ordine perche non li usa tutti l'utente in quanto ne aveva di piu
@@ -127,12 +125,11 @@ public class OrdineService {
                 //se non ha usato i punti e non c'erano prodotti in promo gli aggiungo quelli che gli spettano
             }
             //qui ci vado anche se usa zero punti ma tanto non succede nulla, lascia tutto inalterato
-            double detrazione = (double) ordineSalvato.getPuntiusati() / 2;
+            double detrazione =Math.floor( (double) ordineSalvato.getPuntiusati() / 2);
             double nuovoTotale = ordineSalvato.getTotale() - detrazione;
             ordineSalvato.setTotale(nuovoTotale);//sottraggo sconto a totale
             u.setPuntifedelta(u.getPuntifedelta() - ordineSalvato.getPuntiusati());//sottraggo punti usati
         }
-        //qua se rimetti save vedi che non è u ma utentepuntiaggiornati
         ordineSalvato.setUtente(u);//cosi restituisco ordine con utente con punti aggiornati
         return ordineSalvato;
     }
@@ -142,8 +139,7 @@ public class OrdineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Ordine> getOrdiniInPeriodo(//Utente u,
-                                           Date inizio, Date fine, int numPagina, int dimPagina, String ordinamento) throws RangeDateNonAccettabile, UtenteNonEsistenteONonValido {
+    public List<Ordine> getOrdiniInPeriodo(Date inizio, Date fine, int numPagina, int dimPagina, String ordinamento) throws RangeDateNonAccettabile, UtenteNonEsistenteONonValido {
         if(inizio.after(fine)){
             throw new RangeDateNonAccettabile();
         }
@@ -166,8 +162,7 @@ public class OrdineService {
     }
 
     @Transactional(readOnly = true)
-    public List<Ordine> ordiniCliente(//Utente u,
-                                      int numPagina, int dimPagina, String ordinamento) throws UtenteNonEsistenteONonValido{
+    public List<Ordine> ordiniCliente(int numPagina, int dimPagina, String ordinamento) throws UtenteNonEsistenteONonValido{
         if(!utenteRepository.existsById(Utils.getIdUtente())){
             throw new UtenteNonEsistenteONonValido();
         }
@@ -186,8 +181,8 @@ public class OrdineService {
         }
     }
 
-    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class,TentativoNonAutorizzato.class})
-    public void rimuoviOrdine(int idOrdine) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, DettaglioOrdineNonValido, ProdottoNonValidoException, OrdineNonPiuAnnullabileException, TentativoNonAutorizzato {
+    @Transactional(readOnly = false,rollbackFor = {OrdineNonValido.class,QuantitaProdottoNonDisponibile.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class,TentativoNonAutorizzato.class,PuntiUsatiInAltroOrdineException.class})
+    public void rimuoviOrdine(int idOrdine) throws OrdineNonPresenteNelDbExceptions, UtenteNonEsistenteONonValido, DettaglioOrdineNonValido, ProdottoNonValidoException, OrdineNonPiuAnnullabileException, TentativoNonAutorizzato, PuntiUsatiInAltroOrdineException {
         Optional<Ordine> ordine = ordineRepository.findById(idOrdine);   //cerco ordine, alternativam potevo if ! ordineRepository.existsByid(idOrdine)
         if(ordine.isPresent()){
             Ordine daEliminare=ordine.get();
@@ -211,12 +206,11 @@ public class OrdineService {
             if(!utente.getOrdini().contains(ordine.get())){
                 throw new TentativoNonAutorizzato();
             }
-            System.out.println("l'ordine usava "+daEliminare.getPuntiusati());
             int puntiDaRestituire=utenteOrdine.getPuntifedelta()+ daEliminare.getPuntiusati();
             utenteOrdine.setPuntifedelta(puntiDaRestituire);//restituisco punti usati ad utente
 
             utenteOrdine.getOrdini().remove(daEliminare);//elimino questo tra i suoi ordini
-            //RESTITUISCO SOLDI ???????
+
             double totaleSenzaScontiOPromo=0.0;
             for(DettaglioOrdine d: daEliminare.getListaDettagliOrdine()){
                 DettaglioOrdine dettaglioDaEliminare=dettaglioOrdineRepository.findById(d.getId()).orElse(null);
@@ -231,26 +225,35 @@ public class OrdineService {
                 int quantitaAggiornata=prodotto.getQuantita()+d.getQuantita();
                 prodotto.setQuantita(quantitaAggiornata);//reimposto quantita disponibile prodotto
                 prodotto.getDettaglioOrdini().remove(dettaglioDaEliminare);
-                //ANCHE QUI, NECESSARIE LE SAVE???
-//                prodottoRepository.save(prodotto);
-                //RIMETTO NEL CARRELLO I PRODOTTI DELL'ORDINE ANNULLATO COSI IN CASO PUO RIFARE ORDINE
-                DettaglioCarrello dettcarr=new DettaglioCarrello();
-                dettcarr.setProdotto(d.getProdotto());
-                dettcarr.setQuantita(d.getQuantita());
-                dettcarr.setPrezzoUnitario(d.getPrezzoUnitario());
-                dettcarr.setCarrello(utenteOrdine.getCarrello());
-                dettaglioCarrelloRepository.save(dettcarr);
 
+                //SE NEL CARRELLO C'ERA GIA UNO DEI PRODOTTI PRESENTE NELL'ORDINE ANNULLATO
+                //AUMENTO LA QUANTITA SENZA CREARE NUOVO DETTAGLIOCARRELLO O VIOLO VINCOLI UNIQUE ID_PRODOTTO-ID_CARRELLO
+                if(dettaglioCarrelloRepository.existsByCarrello_IdAndProdotto_Id(utente.getCarrello().getId(), prodotto.getId())){
+                    DettaglioCarrello dettaglioCarrello=dettaglioCarrelloRepository.findByCarrello_IdAndProdotto_Id(utente.getCarrello().getId(), prodotto.getId());
+                    dettaglioCarrello.setQuantita(dettaglioCarrello.getQuantita()+d.getQuantita());
+                }
+                //SE NON C'È AGGIUNGO
+                else {
+                    DettaglioCarrello dettcarr = new DettaglioCarrello();
+                    dettcarr.setProdotto(d.getProdotto());
+                    dettcarr.setQuantita(d.getQuantita());
+                    dettcarr.setPrezzoUnitario(prodotto.getPrezzo());
+                    dettcarr.setCarrello(utenteOrdine.getCarrello());
+                    dettaglioCarrelloRepository.save(dettcarr);
+                }
                 dettaglioOrdineRepository.delete(d);
             }
             //CONTROLLO SE DEVO TOGLIERE PUNTI AD UTENTE:
-            //-SE NON ERANO STATI USATI PUNTI E NON ERANO STATE APPLICATE PROMOZIONI AI PRODOTTI DEVO TOGLIERE I PUNTI CHE GLI AVEVO
-            //AGGIUNTO, CHE SONO  PREZZOTOTALE/2
+            //-SE NON ERANO STATI USATI PUNTI E NON ERANO STATE APPLICATE PROMOZIONI AI PRODOTTI, DEVO TOGLIERE I PUNTI CHE GLI AVEVO
+            //AGGIUNTO CIOÈ PREZZOTOTALE/2
+            //POTREBBE DARSI CHE L'UTENTE ABBIA USATO I PUNTI DI QUESTO ORDINE SUBITO PER UN ALTRO, QUINDI QUESTO VALORE SAREBBE NEGATIVO,
+            //IN QUESTO CASO GLI DO ERRORE E GLI DICO DI ELIMINARE PRIMA ORDINE DOVE HA USATO PUNTI E POI QUESTO, OPPPURE LASCIA COSI.
 
-            System.out.println("TOTALE SENZA SCONTI O PROMO:  "+totaleSenzaScontiOPromo);
-            System.out.println("TOTALE INVECE DA ELIMINARE: " +daEliminare.getTotale());
             if(daEliminare.getPuntiusati()==0 && totaleSenzaScontiOPromo==daEliminare.getTotale()) {
-                utenteOrdine.setPuntifedelta(utenteOrdine.getPuntifedelta()-(int )Math.ceil(totaleSenzaScontiOPromo/2));
+                utenteOrdine.setPuntifedelta(utenteOrdine.getPuntifedelta()-(int )Math.floor(totaleSenzaScontiOPromo/2));
+                if(utenteOrdine.getPuntifedelta()<0){
+                    throw new PuntiUsatiInAltroOrdineException();
+                }
             }
             //ELIMINO ORDINE ALLA FINE
             ordineRepository.delete(daEliminare);

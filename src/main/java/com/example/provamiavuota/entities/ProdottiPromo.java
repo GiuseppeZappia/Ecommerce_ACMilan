@@ -24,13 +24,13 @@ public class ProdottiPromo {
     @Column(name = "sconto")
     private int sconto;
 
-    @ManyToOne()//cascade = CascadeType.MERGE)
+    @ManyToOne()
     @JoinColumn(name = "id_promozione")
     @ToString.Exclude
     @JsonIgnore
     private Promozione promozione;
 
-    @ManyToOne()//cascade=CascadeType.MERGE)
+    @ManyToOne()
     @JoinColumn(name="id_prodotto",unique = true)
     private Prodotto prodotto;
 

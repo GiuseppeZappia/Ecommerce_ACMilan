@@ -1,7 +1,5 @@
 package com.example.provamiavuota.repositories;
-
 import com.example.provamiavuota.entities.DettaglioCarrello;
-import com.example.provamiavuota.entities.Ordine;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -90,9 +90,6 @@ class Model {
   }
 
 
-
-
-
   //--------------PRODOTTI--------------
   Future<List<Prodotto>?>? trovaProdottoPerNome(String nome) async {
     try {
@@ -101,15 +98,13 @@ class Model {
         return elencoProdotti(0, 20, "prezzo");
       }
       final url="${Constants.REQUEST_ELENCO_PRODOTTI_PER_NOME}/$nome";
-      // String response=await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER,url);
       Prodotto prod=Prodotto.fromJson(json.decode(await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER,url)));
-      // var lista=List<Prodotto>.from(jsonDecode(response).map((i) => Prodotto.fromJson(i)).toList());
       List<Prodotto> lista2=[];
       lista2.add(prod);
       return lista2;
     }
     catch (e) {
-      return null; // not the best solution
+      return null;
     }
   }
 
@@ -144,7 +139,7 @@ class Model {
       String response = await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER, url, params);
       return List<Prodotto>.from(json.decode(response).map((i) => Prodotto.fromJson(i)).toList());
     } catch (e) {
-      return null; // non la migliore soluzione
+      return null;
     }
   }
 
@@ -163,7 +158,7 @@ class Model {
       String response = await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER, url, params);
       return List<Prodotto>.from(json.decode(response).map((i) => Prodotto.fromJson(i)).toList());
     } catch (e) {
-      return null; // non la migliore soluzione
+      return null;
     }
   }
 
@@ -178,12 +173,11 @@ class Model {
       String response = await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER, url, params);
       return List<Prodotto>.from(json.decode(response).map((i) => Prodotto.fromJson(i)).toList());
     } catch (e) {
-      return null; // non la migliore soluzione
+      return null;
     }
   }
 
 
-  //PROVARE SE CON PRODOTTO CHE LANCIA ECCEZIONE NEL BE COSA RESTITUISCE
   Future<bool> isProdottoCoinvolto(int idProdotto) async {
     try {
       String url= "${Constants.REQUEST_PRODOTTO_COINVOLTO_IN_PROMO}/$idProdotto";
@@ -196,7 +190,6 @@ class Model {
 
     //------------ORDINE---------------
 
-  //CONTROLLA CON UNO SOLO PERCHE FORSE NON ANDAVA
   Future<List<Ordine>?>? elencoOrdiniNelPeriodo(DateTime dataInizio, DateTime dataFine, int numPagina, int dimPagina, String ordinamento) async {
     try {
 
@@ -206,7 +199,6 @@ class Model {
       String formattedDataFine = dateFormat.format(dataFine);
 
       String url = "${Constants.REQUEST_ORDINI_NEL_PERIODO}/$formattedDataInizio/$formattedDataFine";
-      print(url);
       Map<String, String> params = {
         "numPagina": numPagina.toString(),
         "dimPagina": dimPagina.toString(),
@@ -217,7 +209,7 @@ class Model {
       return List<Ordine>.from(json.decode(response).map((i) => Ordine.fromJson(i)).toList());
 
     } catch (e) {
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
@@ -237,7 +229,7 @@ class Model {
       return List<Ordine>.from(json.decode(response).map((i) => Ordine.fromJson(i)).toList());
 
     } catch (e) {
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
@@ -255,13 +247,11 @@ class Model {
         return null;
       }
     } catch (e) {
-      print(e);
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
 
-  //CONTROLLA CON UNO SOLO PERCHE FORSE NON ANDAVA COME PRODOTTO
   Future<List<DettaglioOrdine>?>? dettagliOrdineUtente(int idOrdine,int numPagina, int dimPagina, String ordinamento) async {
     try {
 
@@ -269,25 +259,21 @@ class Model {
 
 
       Map<String, String> params = {
-        // "idOrdine":idOrdine.toString(),
         "numPagina": numPagina.toString(),
         "dimPagina": dimPagina.toString(),
         "ordinamento": ordinamento
       };
 
       String response = await _restManager.makeGetRequest(Constants.ADDRESS_STORE_SERVER, url, params);
-      print(response);
       return List<DettaglioOrdine>.from(json.decode(response).map((i) => DettaglioOrdine.fromJson(i)).toList());
 
     } catch (e) {
-      print(e);
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
 
   //----------PROMOZIONI---------
-  //CONTROLLA CON UNO SOLO PERCHE FORSE NON ANDAVA COME PRODOTTO
   Future<List<Promozione>?>? elencoPromozioni(int numPagina, int dimPagina, String ordinamento) async {
     try {
       String url = Constants.REQUEST_ELENCO_PROMOZIONI;
@@ -303,7 +289,7 @@ class Model {
 
 
     } catch (e) {
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
@@ -312,7 +298,6 @@ class Model {
 
   //-----------CARRELLO----------
 
-  //CONTROLLA CON UNO SOLO PERCHE FORSE NON ANDAVA COME PRODOTTO
   Future<List<Dettagliocarrello>?>? visualizzaCarrello(int idUtente,int numPagina, int dimPagina, String ordinamento) async {
     try {
       String url = "${Constants.REQUEST_VEDI_CARRELLO}/$idUtente";
@@ -326,7 +311,7 @@ class Model {
 
       return List<Dettagliocarrello>.from(json.decode(response).map((i) => Dettagliocarrello.fromJson(i)).toList());
     } catch (e) {
-      return null; // non la soluzione migliore
+      return null;
     }
   }
 
@@ -340,7 +325,7 @@ class Model {
       lista2.add(carrello);
       return lista2;
     } catch (e) {
-      return null; // non la soluzione migliorei
+      return null;
     }
   }
 
@@ -353,7 +338,6 @@ class Model {
       lista2.add(ordine);
       return lista2;
     } catch (e) {
-      print(e);
       return null;
     }
   }
@@ -377,7 +361,7 @@ class Model {
       return utente;
     }
     catch (e) {
-      return null;// not the best solution
+      return null;
     }
   }
 
@@ -385,7 +369,7 @@ Future<Utente?>? addUser(UtenteRegistrDTO user) async {
     try {
       String rawResult = await _restManager.makePostRequest(Constants.ADDRESS_STORE_SERVER, Constants.REQUEST_REGISTRAZIONE, user);
       if ( rawResult.contains(Constants.RESPONSE_ERROR_MAIL_USER_ALREADY_EXISTS) ) {
-        return null; // not the best solution
+        return null;
       }
       else {
         Utente u=Utente.fromJson(jsonDecode(rawResult));
@@ -393,7 +377,7 @@ Future<Utente?>? addUser(UtenteRegistrDTO user) async {
       }
     }
     catch (e) {
-      return null; // not the best solution
+      return null;
     }
   }
 

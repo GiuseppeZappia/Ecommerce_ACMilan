@@ -52,9 +52,6 @@ public class RegistrazioneService {
     private String passwordAdmin = "admin";
     @Autowired
     private CarrelloRepository carrelloRepository;
-    @Autowired
-    private UtenteRepository userRepository;
-
 
     @Transactional(readOnly = false, rollbackFor = Exception.class)
     public ResponseEntity registraNuovoUtente(UtenteRegistrDTO user) throws ErroreNellaRegistrazioneUtenteException {
@@ -125,36 +122,11 @@ public class RegistrazioneService {
             RoleRepresentation userRole = clientResource.roles().get("utente").toRepresentation();
             usersRessource.get(userId).roles().clientLevel(clientResource.toRepresentation().getId()).add(Collections.singletonList(userRole));
 
-            //SU POSTMAN PORTA ID=0 PERCHE RESTITUISCO DTO A CUI NON HO AGGIORNATO ID
             return new ResponseEntity(utente_salvato, HttpStatus.OK);
-
         } else {
             throw new ErroreNellaRegistrazioneUtenteException();
         }
     }
-
-
-//    public ResponseEntity loginUser(LoginDTO loginDTO) throws ErroreLoginException {
-//        if (loginDTO == null) {
-//            throw new ErroreLoginException();
-//        }
-//        Keycloak keycloakLogin = KeycloakBuilder.builder()
-//                .serverUrl(serverUrl)
-//                .realm(realm)
-//                .clientId(clientId)
-//                .clientSecret(secret)
-//                .username(loginDTO.username())
-//                .password(loginDTO.password())
-//                .grantType(OAuth2Constants.PASSWORD)
-//                .build();
-//
-//        AccessTokenResponse tokenResponse = keycloakLogin.tokenManager().grantToken();
-//        if (tokenResponse == null || tokenResponse.getToken() == null || tokenResponse.getToken().isEmpty()) {
-//            throw new ErroreLoginException();
-//        }
-//
-//        return new ResponseEntity<>(tokenResponse, HttpStatus.OK);
-//    }
 
     public ResponseEntity logoutUser(String refreshToken) throws ErroreLogoutException {
         try {

@@ -41,7 +41,9 @@ public class CarrelloService {
         Sort.Direction tipoOrdinamento = Sort.Direction.DESC;
         Pageable paging = PageRequest.of(numPagina, dimPagina, Sort.by(tipoOrdinamento, ordinamento));
         Optional<Utente> opt = utenteRepository.findById(idUtente);
-        if (opt.isEmpty() || !utentePresenteNelDb((Utente) opt.get())) {//controllo innanzitutto se esiste con quell'id e poi se gli altri campi presenti nell'ordine sono validi
+
+        //controllo innanzitutto se esiste con quell'id e poi se gli altri campi presenti nell'ordine sono validi
+        if (opt.isEmpty() || !utentePresenteNelDb((Utente) opt.get())) {
             throw new UtenteNonEsistenteONonValido();
         }
         Utente u = (Utente) opt.get();
@@ -49,7 +51,6 @@ public class CarrelloService {
         if (c == null || !carrelloRepository.existsByIdAndAndAttivo(c.getId(), 1)) {
             throw new CarrelloNonValidoException();
         }
-        //QUA HA SENSO PRENDERLO DAL DB O È MEGLIO PRENDERLO DAL CARRELLO CON LA GETLISTADETTAGLIORDINE   ??????
         Page<DettaglioCarrello> risultatiPagine = dettaglioCarrelloRepository.findByCarrello_Id(u.getCarrello().getId(), paging);
         if (risultatiPagine.hasContent()) {
             return risultatiPagine.getContent();
@@ -90,9 +91,11 @@ public class CarrelloService {
         //se il prodotto è nascosto non glielo faccio inserire nel carrello, se pero la quantita è zero si, perche
         //è caso in cui ha messo giorni prima nel carrello prodotto che ora non è disponibile e se fa ordine c'è mio avviso che dice
         //elimina se vuoi fare ordine oppure aspetta che torna disponibile
+        //in realta per come ho pensato il FE questo problema nemmeno si pone perche non mostro prodotti nascosti
         if (quantita != 0 && prodottoRepository.existsByNomeIgnoreCaseAndNascosto(prodotto.getNome(), 1)) {
             throw new ProdottoNonValidoException();
         }
+
         //SE IN QUEL CARRELLO C'È GIA QUEL PRODOTTO AGGIORNA LA QUANTITA, IN QUESTO MODO POSSO USARLO SIA
         //PER AGGIUNTE CHE RIMOZIONI DI ELEMENTI, IN CASO DI RIMOZIONE ELEMENTO (QUANTITA = 0) FACCIO
         if (dettaglioCarrelloRepository.existsByCarrello_IdAndProdotto_Id(carr.getId(), idProdotto)) {
@@ -118,71 +121,12 @@ public class CarrelloService {
         return carr;
     }
 
-//    @Transactional(readOnly = false,rollbackFor = {UtenteNonEsistenteONonValido.class,
-//            CarrelloNonValidoException.class,ProdottoNonDisponibileAlMomento.class, ProdottoNonValidoException.class,
-//            QuantitaProdottoNonDisponibile.class,TentativoNonAutorizzato.class})
-//    public Ordine acquista(int idUtente,int puntiUsati) throws UtenteNonEsistenteONonValido, CarrelloNonValidoException, ProdottoNonDisponibileAlMomento, ProdottoNonValidoException, QuantitaProdottoNonDisponibile, OrdineNonValido, MinimoPuntiRichiestoNonSoddisfatto, PuntiFedeltaNonDisponibili, TentativoNonAutorizzato {
-//        int idUt= Utils.getIdUtente();
-//        if(idUt!=idUtente) {
-//            throw new TentativoNonAutorizzato();
-//        }
-//        Optional<Utente> u = utenteRepository.findById(idUtente);
-//        if (u.isEmpty()) {
-//            throw new UtenteNonEsistenteONonValido();
-//        }
-//        Utente utente=u.get();
-//        Carrello carrello = carrelloRepository.findActiveCarrelloByUtenteId(idUtente,1);
-//        if(carrello==null){
-//            throw new CarrelloNonValidoException();
-//        }
-//        if(carrello.getListaDettagliCarrello().isEmpty()){
-//            throw new OrdineNonValido();
-//        }
-//        Ordine ordine = new Ordine();
-//        ordine.setUtente(utente);
-//        ordine.setPuntiusati(puntiUsati);
-//        ordine.setListaDettagliOrdine(new LinkedList<>());//qui aggiungo uno per volta poi
-//        ordine.setData(new Date());
-//
-//        double totale=0.0;
-//
-//        for(DettaglioCarrello d : carrello.getListaDettagliCarrello()){
-//            //SE C'è MA è NASCOSTO DO AVVISO COSI O ELIMINA DAL CARRELLO L'ELEMENTO OPPURE LASCIA FINCHE NON TORNA DISPONIBILE IL PRODOTTO
-//            if(!prodottoRepository.existsByNomeIgnoreCaseAndNascosto(d.getProdotto().getNome(), 0)){
-//                throw new ProdottoNonDisponibileAlMomento();
-//            }
-//            Optional<Prodotto> prod = prodottoRepository.findById(d.getProdotto().getId());
-//            if(prod.isEmpty()){
-//                throw new ProdottoNonValidoException();
-//            }
-//            Prodotto prodotto=prod.get();
-//            if(d.getQuantita()<=0 || d.getQuantita()>prodotto.getQuantita()){
-//                throw new QuantitaProdottoNonDisponibile();
-//            }
-//            if(!Objects.equals(d.getPrezzoUnitario(), prodotto.getPrezzo())){
-//                throw new ProdottoNonValidoException();
-//            }
-//            DettaglioOrdine dettaglioOrdine=new DettaglioOrdine();
-//            dettaglioOrdine.setProdotto(prodotto);
-//            dettaglioOrdine.setQuantita(d.getQuantita());
-//            dettaglioOrdine.setPrezzoUnitario(d.getPrezzoUnitario());
-//            ordine.getListaDettagliOrdine().add(dettaglioOrdine);
-//            totale+=d.getQuantita()*d.getPrezzoUnitario();
-//            //DEVO RIMUOVERE DAL CARRELLO GLI ELEMENTI INSERITI NELL'ORDINE
-//            //NON CHIAMO METODO SOPRA AGGIUNGIPRODOTTO CON QUANTITA = 0 OPPURE
-//            //POTREI AVERE LA CONCURRENTMODIFICATIONEXCEPTION
-//            dettaglioCarrelloRepository.delete(d);
-//        }
-//        ordine.setTotale(totale);
-//        return  ordineService.salvaOrdine(ordine);
-//    }
-
     @Transactional(readOnly = false, rollbackFor = {QuantitaProdottoNonDisponibile.class, OrdineNonValido.class, MinimoPuntiRichiestoNonSoddisfatto.class, PuntiFedeltaNonDisponibili.class, UtenteNonEsistenteONonValido.class, ProdottoNonValidoException.class, CarrelloNonValidoException.class, TentativoNonAutorizzato.class})
     public Ordine acquista(CarrelloDto carrelloDto, int puntiUsati) throws QuantitaProdottoNonDisponibile, OrdineNonValido,
             MinimoPuntiRichiestoNonSoddisfatto, PuntiFedeltaNonDisponibili,
             UtenteNonEsistenteONonValido, ProdottoNonValidoException, CarrelloNonValidoException, TentativoNonAutorizzato {
         int idUt = Utils.getIdUtente();
-        //UTENTE PASSATOMI NEL DTO != DA QUELLO ATTUALE
+        //UTENTE PASSATOMI NEL DTO != DA QUELLO ATTUALE CHE VEDO DA TOKEN
         if (idUt != carrelloDto.idUtente()) {
             throw new TentativoNonAutorizzato();
         }
@@ -200,7 +144,6 @@ public class CarrelloService {
         }
         //SE NEL DB IL MIO CARRELLO È VUOTO GIA NON HA SENSO ANDARE AVANTI, L'ORDINE NON È VALIDO
         if (carrelloBE.getListaDettagliCarrello().isEmpty()) {
-            System.out.println("sono qui 1111");
             throw new OrdineNonValido();
         }
 
@@ -230,7 +173,6 @@ public class CarrelloService {
             //IN CUI LA MOGLIE HA MESSO NEL CARRELLO PRODOTTO QUINDI NEL DB HO PIU' PRODOTTI RISPETTO
             //A QUELLI CHE IL MARITO MI STA PASSANDO DAL FE OVVERO CHE VEDE LUI
             if (carrelloBE.getListaDettagliCarrello().size() != carrelloDto.listaDettagli().size()) {
-                System.out.println("SONO QUI DUE HAHAHA");
                 throw new OrdineNonValido();
             }
             //NON BASTA COME CONTROLLO, POTREBBERO AVERE STESSA DIMENSIONE MA DI UN PRODOTTO HO QUANTITA DIVERSE,
@@ -241,7 +183,6 @@ public class CarrelloService {
             //CHE STO CONSIDERANDO OVVIAMENTE NON VA BENE
             if (!dettaglioCarrelloRepository.existsByCarrello_IdAndProdotto_IdAndQuantitaAndPrezzoUnitario(carrelloBE.getId(),
                     prodotto.getId(), dettaglioFE.quantita(), dettaglioFE.prezzoUnitario())) {
-                System.out.println("SONO  QUI DENTRO REPO STRANO SUS");
                 throw new OrdineNonValido();
             }
             DettaglioCarrello dettaglioBE = dettaglioCarrelloRepository.findByCarrello_IdAndProdotto_Id(carrelloBE.getId(), prodotto.getId());
@@ -268,8 +209,6 @@ public class CarrelloService {
             dettaglioCarrelloRepository.delete(dettaglioBE);
         }
         ordine.setTotale(totale);
-        System.out.println("TOTALE È  "+totale);
-        System.out.println(ordine.getData());
         return ordineService.salvaOrdine(ordine);
 
     }

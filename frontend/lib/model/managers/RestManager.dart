@@ -23,7 +23,6 @@ class RestManager {
     while ( true ) {
       try {
         var response;
-        // setting content type
         String contentType = "";
         dynamic formattedBody;
         if ( type == TypeHeader.json ) {

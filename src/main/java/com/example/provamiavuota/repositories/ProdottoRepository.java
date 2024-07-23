@@ -6,19 +6,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 public interface ProdottoRepository extends JpaRepository<Prodotto,Integer> {
 
     Prodotto findByNomeIgnoreCaseAndNascosto(String nome,int nascosto);
-    List<Prodotto> findByNomeContainingIgnoreCase(String nome);
     Page<Prodotto> findByCategoriaContainingIgnoreCaseAndNascosto(String categoria, Pageable paging,int nascosto);
-    List<Prodotto> findByPrezzo(Double prezzo);
-    List<Prodotto> findAllByOrderByPrezzoAsc();
-    List<Prodotto> findAllByOrderByPrezzoDesc();
-    List<Prodotto> findByPrezzoGreaterThan(Double prezzo);
-    List<Prodotto> findByPrezzoLessThan(Double prezzo);
+
     @Query( "SELECT p "+
             "FROM Prodotto p "+
             "WHERE (p.prezzo >= ?1 OR ?1 IS NULL) AND " +
@@ -36,9 +28,6 @@ public interface ProdottoRepository extends JpaRepository<Prodotto,Integer> {
     Page<Prodotto> ricercaAvanzata(Double sogliaMin,Double sogliaMax,String nome,String categoria,int quantita,Pageable paging);
     boolean existsByNomeIgnoreCaseAndNascosto(String nome,int nascosto);
 
-    int countByCategoriaIgnoreCase(String categoria);
-    int countByPrezzo(Double prezzo);
-    int countByCategoriaIgnoreCaseAndPrezzo(String categoria,Double prezzo);
     @Query( "SELECT p "+
             "FROM Prodotto p "+
             "WHERE (p.prezzo >= ?1 OR ?1 IS NULL) AND " +
@@ -49,6 +38,5 @@ public interface ProdottoRepository extends JpaRepository<Prodotto,Integer> {
     )
     Page<Prodotto> findAllByNascosto(Pageable paging ,int nascosto);
     Page<Prodotto> findByQuantitaGreaterThanAndNascosto(Pageable paging,int quantita, int nascosto);
-    int countByNascosto(int nascosto);
 
 }

@@ -7,11 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-
-import java.math.BigDecimal;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -55,18 +51,15 @@ public class Prodotto {
     @Basic
     @Column(name="hidden",length = 1)
     private int nascosto;
-//
-//    @Basic
-//    @Column(name="preferito",length = 1)
-//    private int preferito;
+
 
     @OneToMany(targetEntity = DettaglioOrdine.class, mappedBy="prodotto",cascade = CascadeType.MERGE)
-    @JsonIgnore//cosi evito i cicli (guarda la cosa LAZY che diceva prof pure)
+    @JsonIgnore//cosi evito i cicli
     @ToString.Exclude
     private List<DettaglioOrdine> dettaglioOrdini;
 
     @OneToMany(targetEntity = ProdottiPromo.class, mappedBy="prodotto",cascade = CascadeType.MERGE)
-    @JsonIgnore//cosi evito i cicli (guarda la cosa LAZY che diceva prof pure)
+    @JsonIgnore//cosi evito i cicli
     @ToString.Exclude
     private List<ProdottiPromo> dettaglioPromozioni;
 }
